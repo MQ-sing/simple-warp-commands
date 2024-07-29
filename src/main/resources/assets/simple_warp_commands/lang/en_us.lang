@@ -1,0 +1,16 @@
+warp.usage=/warp <waypoint-name>
+warp.on=§d§oGo to §2%s§d§o!
+warps.listItem=§2%s  §8-   §7[%d,%d,%d]
+warps.usage=/warps
+setwarp.usage=/setwarp <waypoint-name> [!]
+delwarp.usage=/delwarp <waypoint-name>
+home.usage=/home
+sethome.usage=/sethome
+home.on=§dWelcome home!
+home.tip=You have not a home yet. Try sleep or use "sethome" command to set.
+warps.no_warp=There isn't any waypoints! Use "setwarp" command to set one.
+setwarp.set=§2Warp set!
+warp.not_found=Warp '%s' not found!
+setwarp.replace=Warp '%s' already exists. if you really want to replace it, please add '!' flag in the second argument.
+delwarp.on=§3Warp deleted!
+sethome.on=§2Home set!
