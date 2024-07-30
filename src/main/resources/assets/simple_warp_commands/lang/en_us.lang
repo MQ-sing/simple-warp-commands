@@ -14,3 +14,5 @@ warp.not_found=Warp '%s' not found!
 setwarp.replace=Warp '%s' already exists. if you really want to replace it, please add '!' flag in the second argument.
 delwarp.on=§3Warp deleted!
 sethome.on=§2Home set!
+back.usage=/back
+back.not_found=You haven't the back position.

@@ -14,3 +14,5 @@ warp.not_found=未找到传送点'%s'！
 setwarp.replace=传送点'%s'已经存在。如果你确实想替换它，请于命令的第二个参数添加"!"标志。
 delwarp.on=§3传送点已删除！
 sethome.on=§2家已设置!
+back.usage=/back
+back.not_found=你还没有可back的位置。

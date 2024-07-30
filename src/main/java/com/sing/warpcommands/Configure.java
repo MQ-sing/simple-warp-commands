@@ -11,4 +11,8 @@ public class Configure {
     @Config.RequiresWorldRestart
     @Config.Comment("Enable the /home command set")
     public static boolean enableHomeCommand = true;
+
+    @Config.RequiresWorldRestart
+    @Config.Comment("Enable the /back command")
+    public static boolean enableBackCommand = true;
 }
