@@ -1,18 +1,12 @@
 package com.sing.warpcommands.utils;
 
 import net.minecraft.entity.player.EntityPlayerMP;
-import net.minecraft.nbt.*;
-import net.minecraft.util.ResourceLocation;
-import net.minecraft.util.SoundEvent;
+import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.nbt.NBTTagString;
 import net.minecraftforge.common.util.INBTSerializable;
 
 public class WayPoint extends EntityPos implements INBTSerializable<NBTTagCompound> {
     public String name;
-
-    public WayPoint(String name, double x, double y, double z, float yaw, float pitch, int dim) {
-        super(x, y, z, yaw, pitch, dim);
-        this.name = name;
-    }
 
     public WayPoint(String name, EntityPlayerMP player) {
         super(player);
@@ -21,8 +15,6 @@ public class WayPoint extends EntityPos implements INBTSerializable<NBTTagCompou
 
     public WayPoint() {
     }
-
-    ;
 
     @Override
     public NBTTagCompound serializeNBT() {

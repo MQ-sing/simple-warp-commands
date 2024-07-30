@@ -28,6 +28,6 @@ public class CommandBack extends CommandBase {
         CapabilityPlayer.PlayerLocations loc = CapabilityPlayer.get(player);
         if (loc == null) return;
         if (loc.backPosition == null) throw new CommandException("back.not_found");
-        loc.backPosition.setTo(player, loc);
+        loc.backPosition.teleport(player, loc);
     }
 }

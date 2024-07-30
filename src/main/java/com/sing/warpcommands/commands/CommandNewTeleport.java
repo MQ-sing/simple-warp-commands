@@ -34,7 +34,7 @@ public class CommandNewTeleport extends CommandBase {
                 getPlayer(server, sender, args[0]) :
                 server.getPlayerList().getPlayers().stream().filter(i -> i != sender).findAny().orElseThrow(() -> new CommandException(I18n.format("tpnew.no_target")));
         EntityPlayerMP player = getCommandSenderAsPlayer(sender);
-        new EntityPos(target).setTo(getCommandSenderAsPlayer(sender), player.getCapability(CapabilityPlayer.cap, null));
+        new EntityPos(target).teleport(getCommandSenderAsPlayer(sender), player.getCapability(CapabilityPlayer.cap, null));
         notifyCommandListener(sender, this, "tpplus.success", target.getName());
     }
 

@@ -41,7 +41,7 @@ public class CommandWarp {
             WayPoint point = WorldDataWaypoints.get(sender.getEntityWorld()).get(args[0]);
             if (point == null) throw new CommandException("warp.not_found", args[0]);
             CapabilityPlayer.PlayerLocations loc = CapabilityPlayer.get(player);
-            point.setTo(player, loc);
+            point.teleport(player, loc);
             player.sendMessage(new TextComponentTranslation("warp.on", point.name));
 
         }

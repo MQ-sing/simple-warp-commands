@@ -1,20 +1,17 @@
 package com.sing.warpcommands.data;
 
 import com.sing.warpcommands.utils.WayPoint;
-import net.minecraft.entity.player.EntityPlayerMP;
-import net.minecraft.nbt.*;
-import net.minecraft.util.math.BlockPos;
+import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
+import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.nbt.NBTTagList;
 import net.minecraft.world.World;
 import net.minecraft.world.storage.WorldSavedData;
 import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.Nullable;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
 
 public class WorldDataWaypoints extends WorldSavedData {
-    public final HashMap<String, WayPoint> wayPoints = new HashMap<>();
+    public final Object2ObjectOpenHashMap<String, WayPoint> wayPoints = new Object2ObjectOpenHashMap<>();
 
     public WorldDataWaypoints(String name) {
         super(name);
