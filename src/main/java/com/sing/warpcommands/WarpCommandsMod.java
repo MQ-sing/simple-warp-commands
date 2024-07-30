@@ -3,6 +3,7 @@ package com.sing.warpcommands;
 import com.sing.simple_warp_commands.Tags;
 import com.sing.warpcommands.commands.CommandBack;
 import com.sing.warpcommands.commands.CommandHome;
+import com.sing.warpcommands.commands.CommandNewTeleport;
 import com.sing.warpcommands.commands.CommandWarp;
 import com.sing.warpcommands.data.CapabilityPlayer;
 import com.sing.warpcommands.utils.EntityPos;
@@ -38,6 +39,9 @@ public class WarpCommandsMod {
         if (Configure.enableBackCommand) {
             e.registerServerCommand(new CommandBack());
         }
+        if (Configure.enableTpPlusCommand) {
+            e.registerServerCommand(new CommandNewTeleport());
+        }
     }
 
     @SubscribeEvent
@@ -49,8 +53,8 @@ public class WarpCommandsMod {
 
     @SubscribeEvent
     static void onPlayerClone(PlayerEvent.Clone e) {
-        CapabilityPlayer.PlayerLocations original = e.getOriginal().getCapability(CapabilityPlayer.cap, null);
-        CapabilityPlayer.PlayerLocations p = e.getEntityPlayer().getCapability(CapabilityPlayer.cap, null);
+        CapabilityPlayer.PlayerLocations original = CapabilityPlayer.get(e.getOriginal());
+        CapabilityPlayer.PlayerLocations p = CapabilityPlayer.get(e.getEntityPlayer());
         if (p == null || original == null) return;
         p.homePosition = original.homePosition;
         p.backPosition = e.isWasDeath() ? new EntityPos(e.getOriginal()) : original.backPosition;

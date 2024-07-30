@@ -6,8 +6,6 @@ import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.nbt.*;
-import net.minecraft.util.ResourceLocation;
-import net.minecraft.util.SoundEvent;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import net.minecraftforge.common.DimensionManager;
@@ -15,8 +13,6 @@ import net.minecraftforge.common.util.INBTSerializable;
 import net.minecraftforge.common.util.ITeleporter;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
-
-import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 public class EntityPos implements INBTSerializable<NBTTagCompound> {

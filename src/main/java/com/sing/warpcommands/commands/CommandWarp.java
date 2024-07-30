@@ -36,14 +36,11 @@ public class CommandWarp {
 
         @Override
         public void execute(@NotNull MinecraftServer server, @NotNull ICommandSender sender, String @NotNull [] args) throws CommandException {
-            if (!(sender instanceof EntityPlayerMP)) {
-                return;
-            }
             if (args.length != 1) throw new WrongUsageException(this.getUsage(sender));
+            EntityPlayerMP player = getCommandSenderAsPlayer(sender);
             WayPoint point = WorldDataWaypoints.get(sender.getEntityWorld()).get(args[0]);
             if (point == null) throw new CommandException("warp.not_found", args[0]);
-            EntityPlayerMP player = (EntityPlayerMP) sender;
-            CapabilityPlayer.PlayerLocations loc = player.getCapability(CapabilityPlayer.cap, null);
+            CapabilityPlayer.PlayerLocations loc = CapabilityPlayer.get(player);
             point.setTo(player, loc);
             player.sendMessage(new TextComponentTranslation("warp.on", point.name));
 
@@ -107,16 +104,15 @@ public class CommandWarp {
 
         @Override
         public void execute(@NotNull MinecraftServer server, @NotNull ICommandSender sender, String @NotNull [] args) throws CommandException {
-            if (!(sender instanceof EntityPlayerMP)) return;
             if (args.length > 2 || args.length < 1) throw new WrongUsageException(this.getUsage(sender));
-            WorldDataWaypoints data = WorldDataWaypoints.get(sender.getEntityWorld());
+            EntityPlayerMP player = getCommandSenderAsPlayer(sender);
+            WorldDataWaypoints data = WorldDataWaypoints.get(player.world);
             String name = args[0];
             String arg = args.length == 2 ? args[1] : "";
             if (data.has(name) && !arg.contains("!")) {
                 throw new CommandException(I18n.format("setwarp.replace", name));
             }
-            data.set(new WayPoint(name, (EntityPlayerMP) sender
-            ));
+            data.set(new WayPoint(name, player));
             sender.sendMessage(new TextComponentTranslation("setwarp.set"));
 
         }

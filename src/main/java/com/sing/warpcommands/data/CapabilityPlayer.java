@@ -1,6 +1,7 @@
 package com.sing.warpcommands.data;
 
 import com.sing.warpcommands.utils.EntityPos;
+import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.nbt.NBTBase;
 import net.minecraft.nbt.NBTTagCompound;
@@ -77,7 +78,8 @@ public class CapabilityPlayer {
     @CapabilityInject(PlayerLocations.class)
     public static Capability<PlayerLocations> cap;
 
-    CapabilityPlayer.PlayerLocations get(EntityPlayerMP player) {
+    @Nullable
+    public static CapabilityPlayer.PlayerLocations get(EntityPlayer player) {
         return player.getCapability(cap, null);
     }
 }

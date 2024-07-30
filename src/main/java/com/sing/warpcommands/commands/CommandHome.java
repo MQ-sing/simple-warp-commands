@@ -35,12 +35,9 @@ public class CommandHome {
 
         @Override
         public void execute(MinecraftServer server, ICommandSender sender, String[] args) throws CommandException {
-            if (!(sender instanceof EntityPlayerMP)) {
-                return;
-            }
             if (args.length != 0) throw new WrongUsageException(this.getUsage(sender));
-            EntityPlayerMP player = (EntityPlayerMP) sender;
-            CapabilityPlayer.PlayerLocations loc = player.getCapability(CapabilityPlayer.cap, null);
+            EntityPlayerMP player = getCommandSenderAsPlayer(sender);
+            CapabilityPlayer.PlayerLocations loc = CapabilityPlayer.get(player);
             if (loc == null) return;
             if (loc.homePosition == null) {
                 @Nullable
@@ -68,9 +65,8 @@ public class CommandHome {
         @Override
         public void execute(@NotNull MinecraftServer server, @NotNull ICommandSender sender, String[] args) throws CommandException {
             if (args.length != 0) throw new WrongUsageException(this.getUsage(sender));
-            if (!(sender instanceof EntityPlayerMP)) return;
-            EntityPlayerMP player = (EntityPlayerMP) sender;
-            CapabilityPlayer.PlayerLocations loc = player.getCapability(CapabilityPlayer.cap, null);
+            EntityPlayerMP player = getCommandSenderAsPlayer(sender);
+            CapabilityPlayer.PlayerLocations loc = CapabilityPlayer.get(player);
             if (loc == null) return;
             loc.homePosition = new EntityPos(player);
         }
