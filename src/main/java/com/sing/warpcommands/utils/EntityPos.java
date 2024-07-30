@@ -1,13 +1,18 @@
 package com.sing.warpcommands.utils;
 
 import com.sing.warpcommands.data.CapabilityPlayer;
+import net.minecraft.command.CommandException;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.nbt.*;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.SoundEvent;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.World;
+import net.minecraftforge.common.DimensionManager;
 import net.minecraftforge.common.util.INBTSerializable;
+import net.minecraftforge.common.util.ITeleporter;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 
@@ -47,14 +52,29 @@ public class EntityPos implements INBTSerializable<NBTTagCompound> {
         this(player.posX, player.posY, player.posZ, player.rotationYaw, player.rotationPitch, player.dimension);
     }
 
-    public void setTo(EntityPlayerMP e, @Nullable CapabilityPlayer.PlayerLocations cap) {
+    private static class Teleporter implements ITeleporter {
+        private final EntityPos targetPos;
+
+        public Teleporter(EntityPos pos) {
+            targetPos = pos;
+        }
+
+        @Override
+        public void placeEntity(World world, Entity entity, float yaw) {
+            entity.setLocationAndAngles(targetPos.x, targetPos.y, targetPos.z, targetPos.yaw, targetPos.pitch);
+        }
+    }
+
+    public void setTo(EntityPlayerMP e, @Nullable CapabilityPlayer.PlayerLocations cap) throws CommandException {
+        if (!DimensionManager.isDimensionRegistered(dim)) {
+            throw new CommandException("teleport.no_dim");
+        }
         if (e.dimension != dim) {
-            e = (EntityPlayerMP) e.changeDimension(dim);
+            e = (EntityPlayerMP) e.changeDimension(dim, new Teleporter(this));
             if (e == null) return;
         }
         if (cap != null) cap.backPosition = new EntityPos(e);
         e.connection.setPlayerLocation(x, y, z, yaw, pitch);
-        e.playSound(new SoundEvent(new ResourceLocation("minecraft", "mob.endermen.portal")), 0.6f, 1.1f);
     }
 
     @Override

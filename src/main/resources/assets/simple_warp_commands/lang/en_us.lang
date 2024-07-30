@@ -16,3 +16,4 @@ delwarp.on=§3Warp deleted!
 sethome.on=§2Home set!
 back.usage=/back
 back.not_found=You haven't the back position.
+teleport.no_dim=Dimension %d not found!
