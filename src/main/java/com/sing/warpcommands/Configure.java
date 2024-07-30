@@ -16,6 +16,6 @@ public class Configure {
     @Config.Comment("Enable the /back command")
     public static boolean enableBackCommand = true;
 
-    @Config.Comment("replace the /tp command")
+    @Config.Comment("Enable /tp~ command")
     public static boolean enableTpPlusCommand = true;
 }

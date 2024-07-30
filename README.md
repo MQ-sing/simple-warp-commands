@@ -13,3 +13,6 @@ A Minecraft 1.12.2 mod that adds the following commands...
 - /home --Teleport to the home you've set.
 - /sethome(/home!) --Set the home location.
 
+### tp~
+
+- /tp~ --Teleport to another player

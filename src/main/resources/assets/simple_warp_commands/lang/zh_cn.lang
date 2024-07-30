@@ -17,3 +17,5 @@ sethome.on=§2家已设置!
 back.usage=/back
 back.not_found=你还没有可back的位置。
 teleport.no_dim=维度%d不存在！
+tpplus.success=已传送到%s
+tpplus.no_target=无法找到玩家'%s'

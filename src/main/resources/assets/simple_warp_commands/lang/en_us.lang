@@ -17,3 +17,5 @@ sethome.on=§2Home set!
 back.usage=/back
 back.not_found=You haven't the back position.
 teleport.no_dim=Dimension %d not found!
+tpplus.success=Teleported to %s
+tpplus.no_target=Cannot find player '%s'
