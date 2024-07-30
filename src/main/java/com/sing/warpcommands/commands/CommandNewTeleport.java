@@ -39,7 +39,7 @@ public class CommandNewTeleport extends CommandBase {
     }
 
     @Override
-    public List<String> getTabCompletions(MinecraftServer server, ICommandSender sender, String[] args, @Nullable BlockPos targetPos) {
+    public @NotNull List<String> getTabCompletions(MinecraftServer server, @NotNull ICommandSender sender, String @NotNull [] args, @Nullable BlockPos targetPos) {
         return server.getPlayerList().getPlayers().stream().filter(i -> i != sender).map(EntityPlayer::getName).collect(Collectors.toList());
     }
 }
