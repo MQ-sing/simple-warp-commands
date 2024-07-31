@@ -2,7 +2,7 @@ package com.sing.warpcommands.commands;
 
 import com.sing.warpcommands.data.CapabilityPlayer;
 import com.sing.warpcommands.data.WorldDataWaypoints;
-import com.sing.warpcommands.utils.WayPoint;
+import com.sing.warpcommands.utils.EntityPos;
 import net.minecraft.client.resources.I18n;
 import net.minecraft.command.CommandBase;
 import net.minecraft.command.CommandException;
@@ -13,10 +13,12 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.text.TextComponentString;
 import net.minecraft.util.text.TextComponentTranslation;
+import net.minecraftforge.common.DimensionManager;
 import net.minecraftforge.fml.common.event.FMLServerStartingEvent;
 import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.Nullable;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -38,18 +40,19 @@ public class CommandWarp {
         public void execute(@NotNull MinecraftServer server, @NotNull ICommandSender sender, String @NotNull [] args) throws CommandException {
             if (args.length != 1) throw new WrongUsageException(this.getUsage(sender));
             EntityPlayerMP player = getCommandSenderAsPlayer(sender);
-            WayPoint point = WorldDataWaypoints.get(sender.getEntityWorld()).get(args[0]);
-            if (point == null) throw new CommandException("warp.not_found", args[0]);
+            String name = args[0];
+            EntityPos point = WorldDataWaypoints.get(sender.getEntityWorld()).get(name);
+            if (point == null) throw new CommandException("warp.not_found", name);
             CapabilityPlayer.PlayerLocations loc = CapabilityPlayer.get(player);
             point.teleport(player, loc);
-            player.sendMessage(new TextComponentTranslation("warp.on", point.name));
+            player.sendMessage(new TextComponentTranslation("warp.on", name));
 
         }
 
         @Override
         public @NotNull List<String> getTabCompletions(@NotNull MinecraftServer server, ICommandSender sender, String @NotNull [] args, @Nullable BlockPos targetPos) {
             WorldDataWaypoints data = WorldDataWaypoints.get(sender.getEntityWorld());
-            return data.wayPoints.values().stream().map(i -> i.name).collect(Collectors.toList());
+            return new ArrayList<>(data.wayPoints.keySet());
         }
     }
 
@@ -75,18 +78,19 @@ public class CommandWarp {
             }
             sender.sendMessage(
                     new TextComponentString(
-                            data.wayPoints.values().stream()
-                                    .map(way -> I18n.format("warps.listItem", way.name,
-                                            Math.round(way.x),
-                                            Math.round(way.y),
-                                            Math.round(way.z)))
+                            data.wayPoints.object2ObjectEntrySet().stream()
+                                    .map(way -> I18n.format("warps.listItem", way.getKey(),
+                                            Math.round(way.getValue().x),
+                                            Math.round(way.getValue().y),
+                                            Math.round(way.getValue().z),
+                                            DimensionManager.getWorld(way.getValue().dim).provider.getDimensionType().getName()))
                                     .collect(Collectors.joining("\n")))
             );
         }
 
         @Override
         public @NotNull List<String> getAliases() {
-            return Collections.singletonList("warp?");
+            return Collections.emptyList();
         }
     }
 
@@ -112,7 +116,7 @@ public class CommandWarp {
             if (data.has(name) && !arg.contains("!")) {
                 throw new CommandException(I18n.format("setwarp.replace", name));
             }
-            data.set(new WayPoint(name, player));
+            data.set(name, new EntityPos(player));
             sender.sendMessage(new TextComponentTranslation("setwarp.set"));
 
         }
@@ -152,7 +156,7 @@ public class CommandWarp {
         @Override
         public @NotNull List<String> getTabCompletions(@NotNull MinecraftServer server, ICommandSender sender, String @NotNull [] args, @Nullable BlockPos targetPos) {
             WorldDataWaypoints data = WorldDataWaypoints.get(sender.getEntityWorld());
-            return data.wayPoints.values().stream().map(i -> i.name).collect(Collectors.toList());
+            return new ArrayList<>(data.wayPoints.keySet());
         }
     }
 

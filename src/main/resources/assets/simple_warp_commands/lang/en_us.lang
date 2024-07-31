@@ -1,6 +1,6 @@
 warp.usage=/warp <waypoint-name>
 warp.on=§d§oGo to §2%s§d§o!
-warps.listItem=§2%s  §8-   §7[%d,%d,%d]
+warps.listItem=§2%s   §8-   §7[%d,%d,%d], %s
 warps.usage=/warps
 setwarp.usage=/setwarp <waypoint-name> [!]
 delwarp.usage=/delwarp <waypoint-name>
@@ -19,3 +19,4 @@ back.not_found=You haven't the back position.
 teleport.no_dim=Dimension %d not found!
 tpplus.success=Teleported to %s
 tpplus.no_target=Cannot find player '%s'
+teleport.no_dimension_cross=Cross-dimension teleporting is not allowed.

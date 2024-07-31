@@ -1,6 +1,8 @@
 package com.sing.warpcommands.utils;
 
+import com.sing.warpcommands.Configure;
 import com.sing.warpcommands.data.CapabilityPlayer;
+import net.minecraft.client.resources.I18n;
 import net.minecraft.command.CommandException;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
@@ -54,9 +56,9 @@ public class EntityPos implements INBTSerializable<NBTTagCompound> {
         if (cap != null) cap.backPosition = new EntityPos(e);
         if (e.dimension == dim) {
             e.connection.setPlayerLocation(x, y, z, yaw, pitch);
-        } else {
+        } else if (Configure.allowDimensionCross) {
             e.server.getPlayerList().transferPlayerToDimension(e, dim, (world, entity, _unused) -> entity.setLocationAndAngles(x, y, z, yaw, pitch));
-        }
+        } else throw new CommandException(I18n.format("teleport.no_dimension_cross"));
 
     }
 

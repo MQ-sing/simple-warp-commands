@@ -1,6 +1,6 @@
 package com.sing.warpcommands.data;
 
-import com.sing.warpcommands.utils.WayPoint;
+import com.sing.warpcommands.utils.EntityPos;
 import it.unimi.dsi.fastutil.objects.Object2ObjectAVLTreeMap;
 import it.unimi.dsi.fastutil.objects.Object2ObjectMap;
 import net.minecraft.nbt.NBTTagCompound;
@@ -12,7 +12,7 @@ import org.jetbrains.annotations.NotNull;
 import javax.annotation.Nullable;
 
 public class WorldDataWaypoints extends WorldSavedData {
-    public final Object2ObjectMap<String, WayPoint> wayPoints = new Object2ObjectAVLTreeMap<>();
+    public final Object2ObjectMap<String, EntityPos> wayPoints = new Object2ObjectAVLTreeMap<>();
 
     public WorldDataWaypoints(String name) {
         super(name);
@@ -32,28 +32,31 @@ public class WorldDataWaypoints extends WorldSavedData {
         wayPoints.clear();
         NBTTagList list = (NBTTagList) nbt.getTag("WayPoints");
         for (int i = 0; i < list.tagCount(); ++i) {
-            WayPoint p = WayPoint.fromNBT((NBTTagCompound) list.get(i));
-            wayPoints.put(p.name, p);
+            NBTTagCompound compound = (NBTTagCompound) list.get(i);
+            EntityPos p = EntityPos.fromNBT(compound);
+            wayPoints.put(compound.getString("name"), p);
         }
     }
 
     @Override
     public @NotNull NBTTagCompound writeToNBT(@NotNull NBTTagCompound nbt) {
         NBTTagList wayPoints = new NBTTagList();
-        for (WayPoint p : this.wayPoints.values()) {
-            wayPoints.appendTag(p.serializeNBT());
+        for (Object2ObjectMap.Entry<String, EntityPos> p : this.wayPoints.object2ObjectEntrySet()) {
+            NBTTagCompound compound = p.getValue().serializeNBT();
+            compound.setString("name", p.getKey());
+            wayPoints.appendTag(compound);
         }
         nbt.setTag("WayPoints", wayPoints);
         return nbt;
     }
 
     @Nullable
-    public WayPoint get(String name) {
+    public EntityPos get(String name) {
         return this.wayPoints.get(name);
     }
 
-    public void set(WayPoint wayPoint) {
-        this.wayPoints.put(wayPoint.name, wayPoint);
+    public void set(String name, EntityPos pos) {
+        this.wayPoints.put(name, pos);
         this.markDirty();
     }
 
