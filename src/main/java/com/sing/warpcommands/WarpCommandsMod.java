@@ -9,13 +9,12 @@ import com.sing.warpcommands.data.CapabilityPlayer;
 import com.sing.warpcommands.utils.EntityPos;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.nbt.NBTBase;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.ResourceLocation;
-import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.common.capabilities.CapabilityManager;
 import net.minecraftforge.common.capabilities.ICapabilitySerializable;
 import net.minecraftforge.event.AttachCapabilitiesEvent;
+import net.minecraftforge.event.entity.living.LivingDeathEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
@@ -57,8 +56,15 @@ public class WarpCommandsMod {
         CapabilityPlayer.PlayerLocations p = CapabilityPlayer.get(e.getEntityPlayer());
         if (p == null || original == null) return;
         p.homePosition = original.homePosition;
-        p.backPosition = e.isWasDeath() ? new EntityPos(e.getOriginal()) : original.backPosition;
+        p.backPosition = original.backPosition;
+    }
 
+    @SubscribeEvent
+    static void onEntityDeath(LivingDeathEvent e) {
+        if (!(e.getEntity() instanceof EntityPlayer)) return;
+        EntityPlayer player = (EntityPlayer) e.getEntity();
+        CapabilityPlayer.PlayerLocations l = CapabilityPlayer.get(player);
+        if (l != null) l.backPosition = new EntityPos(player);
     }
 
     public static ResourceLocation id(String id) {

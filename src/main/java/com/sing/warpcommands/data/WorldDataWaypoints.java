@@ -1,7 +1,8 @@
 package com.sing.warpcommands.data;
 
 import com.sing.warpcommands.utils.WayPoint;
-import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
+import it.unimi.dsi.fastutil.objects.Object2ObjectAVLTreeMap;
+import it.unimi.dsi.fastutil.objects.Object2ObjectMap;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
 import net.minecraft.world.World;
@@ -11,7 +12,7 @@ import org.jetbrains.annotations.NotNull;
 import javax.annotation.Nullable;
 
 public class WorldDataWaypoints extends WorldSavedData {
-    public final Object2ObjectOpenHashMap<String, WayPoint> wayPoints = new Object2ObjectOpenHashMap<>();
+    public final Object2ObjectMap<String, WayPoint> wayPoints = new Object2ObjectAVLTreeMap<>();
 
     public WorldDataWaypoints(String name) {
         super(name);
