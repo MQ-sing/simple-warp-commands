@@ -25,6 +25,11 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public class CommandWarp {
+
+    private static List<String> getWarpCompletion(ICommandSender sender, String[] args) {
+        WorldDataWaypoints p = WorldDataWaypoints.get(sender.getEntityWorld());
+        return args.length > 1 ? p.wayPoints.keySet().stream().filter(w -> w.startsWith(args[0])).collect(Collectors.toList()) : new ArrayList<>(p.wayPoints.keySet());
+    }
     static class CommandWarpTeleport extends CommandBase {
         @Override
         public @NotNull String getName() {
@@ -51,8 +56,7 @@ public class CommandWarp {
 
         @Override
         public @NotNull List<String> getTabCompletions(@NotNull MinecraftServer server, ICommandSender sender, String @NotNull [] args, @Nullable BlockPos targetPos) {
-            WorldDataWaypoints data = WorldDataWaypoints.get(sender.getEntityWorld());
-            return new ArrayList<>(data.wayPoints.keySet());
+            return getWarpCompletion(sender, args);
         }
     }
 
@@ -155,8 +159,7 @@ public class CommandWarp {
 
         @Override
         public @NotNull List<String> getTabCompletions(@NotNull MinecraftServer server, ICommandSender sender, String @NotNull [] args, @Nullable BlockPos targetPos) {
-            WorldDataWaypoints data = WorldDataWaypoints.get(sender.getEntityWorld());
-            return new ArrayList<>(data.wayPoints.keySet());
+            return getWarpCompletion(sender, args);
         }
     }
 
