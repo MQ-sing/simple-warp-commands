@@ -36,7 +36,7 @@ public class WarpCommandsMod {
             CommandHome.init(e);
         }
         if (Configure.enableBackCommand) {
-            e.registerServerCommand(new CommandBack());
+            CommandBack.init(e);
         }
         if (Configure.enableTpPlusCommand) {
             e.registerServerCommand(new CommandNewTeleport());

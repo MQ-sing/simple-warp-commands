@@ -92,4 +92,9 @@ public class EntityPos implements INBTSerializable<NBTTagCompound> {
         pos.deserializeNBT(nbt);
         return pos;
     }
+
+    @Override
+    public String toString() {
+        return String.format("[%.1f,%.1f,%.1f], %s", x, y, z, DimensionManager.getProviderType(dim).getName());
+    }
 }

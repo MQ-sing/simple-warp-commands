@@ -20,7 +20,7 @@ public class CommandNewTeleport extends CommandBase {
 
     @Override
     public @NotNull String getName() {
-        return "tp~";
+        return "tpp";
     }
 
     @Override
@@ -32,7 +32,11 @@ public class CommandNewTeleport extends CommandBase {
     public void execute(@NotNull MinecraftServer server, @NotNull ICommandSender sender, String[] args) throws CommandException {
         EntityPlayerMP target = args.length == 1 ?
                 getPlayer(server, sender, args[0]) :
-                server.getPlayerList().getPlayers().stream().filter(i -> i != sender).findAny().orElseThrow(() -> new CommandException(I18n.format("tpnew.no_target")));
+                server.getPlayerList()
+                        .getPlayers().stream()
+                        .filter(i -> i != sender)
+                        .findAny()
+                        .orElseThrow(() -> new CommandException(I18n.format("tpplus.no_target")));
         EntityPlayerMP player = getCommandSenderAsPlayer(sender);
         new EntityPos(target).teleport(getCommandSenderAsPlayer(sender), player.getCapability(CapabilityPlayer.cap, null));
         notifyCommandListener(sender, this, "tpplus.success", target.getName());
