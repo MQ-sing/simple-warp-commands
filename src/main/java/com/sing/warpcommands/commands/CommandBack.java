@@ -1,13 +1,13 @@
 package com.sing.warpcommands.commands;
 
+import com.sing.warpcommands.commands.utils.AbstractCommand;
 import com.sing.warpcommands.data.CapabilityPlayer;
 import com.sing.warpcommands.utils.EntityPos;
-import net.minecraft.command.CommandBase;
 import net.minecraft.command.CommandException;
 import net.minecraft.command.ICommandSender;
-import net.minecraft.command.WrongUsageException;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.util.text.TextComponentTranslation;
 import net.minecraftforge.fml.common.event.FMLServerStartingEvent;
 import org.jetbrains.annotations.NotNull;
 
@@ -16,21 +16,16 @@ import java.util.List;
 
 public class CommandBack {
 
-    static class CommandBackTeleport extends CommandBase {
+    static class CommandBackTeleport extends AbstractCommand {
         @Override
         public @NotNull String getName() {
             return "back";
         }
 
         @Override
-        public @NotNull String getUsage(@NotNull ICommandSender sender) {
-            return "back.usage";
-        }
-
-        @Override
-        public void execute(@NotNull MinecraftServer server, @NotNull ICommandSender sender, String[] args) throws CommandException {
-            if (args.length != 0) throw new WrongUsageException(this.getUsage(sender));
-            EntityPlayerMP player = getCommandSenderAsPlayer(sender);
+        public void execute(@NotNull MinecraftServer server, @NotNull ICommandSender sender, String @NotNull [] args) throws CommandException {
+            noArguments(args);
+            EntityPlayerMP player = asPlayer(sender);
             CapabilityPlayer.PlayerLocations loc = CapabilityPlayer.get(player);
             if (loc == null) return;
             if (loc.backPosition == null) throw new CommandException("back.not_found");
@@ -38,11 +33,7 @@ public class CommandBack {
         }
     }
 
-    static class CommandSetBack extends CommandBase {
-        @Override
-        public @NotNull String getUsage(@NotNull ICommandSender sender) {
-            return "setback.usage";
-        }
+    static class CommandSetBack extends AbstractCommand {
 
         @Override
         public @NotNull String getName() {
@@ -50,12 +41,13 @@ public class CommandBack {
         }
 
         @Override
-        public void execute(@NotNull MinecraftServer server, @NotNull ICommandSender sender, String[] args) throws CommandException {
-            if (args.length != 0) throw new WrongUsageException(this.getUsage(sender));
-            EntityPlayerMP player = getCommandSenderAsPlayer(sender);
+        public void execute(@NotNull MinecraftServer server, @NotNull ICommandSender sender, String @NotNull [] args) throws CommandException {
+            noArguments(args);
+            EntityPlayerMP player = asPlayer(sender);
             CapabilityPlayer.PlayerLocations loc = CapabilityPlayer.get(player);
-            if (loc == null) return;
+            nonNull(loc);
             loc.backPosition = new EntityPos(player);
+            sender.sendMessage(new TextComponentTranslation("setback.on"));
         }
 
         @Override

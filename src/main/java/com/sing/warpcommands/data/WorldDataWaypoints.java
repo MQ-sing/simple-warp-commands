@@ -64,8 +64,9 @@ public class WorldDataWaypoints extends WorldSavedData {
         return this.wayPoints.containsKey(name);
     }
 
-    public void remove(String name) {
-        this.wayPoints.remove(name);
-        this.markDirty();
+    public boolean remove(String name) {
+        boolean success = this.wayPoints.remove(name) != null;
+        if (success) this.markDirty();
+        return success;
     }
 }
