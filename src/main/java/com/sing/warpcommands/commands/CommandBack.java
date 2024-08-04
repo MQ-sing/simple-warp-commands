@@ -7,7 +7,6 @@ import net.minecraft.command.CommandException;
 import net.minecraft.command.ICommandSender;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.util.text.TextComponentTranslation;
 import net.minecraftforge.fml.common.event.FMLServerStartingEvent;
 import org.jetbrains.annotations.NotNull;
 
@@ -26,8 +25,7 @@ public class CommandBack {
         public void execute(@NotNull MinecraftServer server, @NotNull ICommandSender sender, String @NotNull [] args) throws CommandException {
             noArguments(args);
             EntityPlayerMP player = asPlayer(sender);
-            CapabilityPlayer.PlayerLocations loc = CapabilityPlayer.get(player);
-            if (loc == null) return;
+            CapabilityPlayer.PlayerLocations loc = nonNull(CapabilityPlayer.get(player));
             if (loc.backPosition == null) throw new CommandException("back.not_found");
             loc.backPosition.teleport(player, loc);
         }
@@ -44,10 +42,9 @@ public class CommandBack {
         public void execute(@NotNull MinecraftServer server, @NotNull ICommandSender sender, String @NotNull [] args) throws CommandException {
             noArguments(args);
             EntityPlayerMP player = asPlayer(sender);
-            CapabilityPlayer.PlayerLocations loc = CapabilityPlayer.get(player);
-            nonNull(loc);
+            CapabilityPlayer.PlayerLocations loc = nonNull(CapabilityPlayer.get(player));
             loc.backPosition = new EntityPos(player);
-            sender.sendMessage(new TextComponentTranslation("setback.on"));
+            sendSuccess(sender);
         }
 
         @Override

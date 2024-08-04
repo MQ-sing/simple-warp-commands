@@ -56,10 +56,10 @@ public class EntityPos implements INBTSerializable<NBTTagCompound> {
         if (cap != null) cap.backPosition = new EntityPos(e);
         if (e.dimension == dim) {
             e.connection.setPlayerLocation(x, y, z, yaw, pitch);
-        } else if (Configure.allowDimensionCross) {
+        } else {
+            if (!Configure.allowDimensionCross) throw new CommandException(I18n.format("teleport.no_dimension_cross"));
             e.server.getPlayerList().transferPlayerToDimension(e, dim, (world, entity, _unused) -> entity.setLocationAndAngles(x, y, z, yaw, pitch));
-        } else throw new CommandException(I18n.format("teleport.no_dimension_cross"));
-
+        }
     }
 
     @Override
@@ -95,6 +95,9 @@ public class EntityPos implements INBTSerializable<NBTTagCompound> {
 
     @Override
     public String toString() {
-        return String.format("[%.1f,%.1f,%.1f], %s", x, y, z, DimensionManager.getProviderType(dim).getName());
+        String dimName = DimensionManager.getProviderType(dim).getName();
+        return Configure.showCoordinates ?
+                String.format("[%.1f,%.1f,%.1f], %s", x, y, z, dimName) :
+                String.format("in %s", dimName);
     }
 }

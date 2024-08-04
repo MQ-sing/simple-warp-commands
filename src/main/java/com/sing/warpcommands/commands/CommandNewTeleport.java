@@ -11,8 +11,8 @@ import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.math.BlockPos;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
-import javax.annotation.Nullable;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -36,8 +36,9 @@ public class CommandNewTeleport extends AbstractCommand {
                 server.getPlayerList()
                         .getPlayers().stream()
                         .filter(i -> i != sender)
-                        .findAny())
-                .orElseThrow(() -> new CommandException(I18n.format("tpplus.no_target")));
+                        .findAny()
+        ).orElseThrow(() -> new CommandException(I18n.format("tpplus.no_target")));
+
         EntityPlayerMP player = asPlayer(sender);
         new EntityPos(target).teleport(player, player.getCapability(CapabilityPlayer.cap, null));
         notifyCommandListener(sender, this, "tpplus.success", target.getName());

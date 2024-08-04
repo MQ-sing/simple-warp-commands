@@ -19,12 +19,12 @@ public class WorldDataWaypoints extends WorldSavedData {
     }
 
     public static WorldDataWaypoints get(World world) {
-        WorldSavedData data = world.loadData(WorldDataWaypoints.class, "WayPoints");
+        WorldDataWaypoints data = (WorldDataWaypoints) world.loadData(WorldDataWaypoints.class, "WayPoints");
         if (data == null) {
             data = new WorldDataWaypoints("WayPoints");
             world.setData("WayPoints", data);
         }
-        return (WorldDataWaypoints) data;
+        return data;
     }
 
     @Override

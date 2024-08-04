@@ -1,6 +1,5 @@
 package com.sing.warpcommands.commands;
 
-import com.google.common.base.Strings;
 import com.sing.warpcommands.commands.utils.AbstractCommand;
 import com.sing.warpcommands.data.CapabilityPlayer;
 import com.sing.warpcommands.data.WorldDataWaypoints;
@@ -18,11 +17,11 @@ import net.minecraft.util.text.TextComponentString;
 import net.minecraftforge.fml.common.event.FMLServerStartingEvent;
 import org.jetbrains.annotations.NonNls;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
-import javax.annotation.Nullable;
-import java.math.RoundingMode;
-import java.text.NumberFormat;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -31,6 +30,13 @@ public class CommandWarp {
     private static ObjectSet<String> waypointsName(MinecraftServer server) {
         WorldDataWaypoints p = WorldDataWaypoints.get(server.getEntityWorld());
         return p.wayPoints.keySet();
+    }
+
+    @NotNull
+    private static EntityPos findWayPoint(String name, WorldDataWaypoints data) throws CommandException {
+        EntityPos p = data.get(name);
+        if (p == null) throw new CommandException("warp.not_found", name);
+        return p;
     }
 
     private static String waypointName(String s) {
@@ -47,8 +53,7 @@ public class CommandWarp {
         public void execute(@NotNull MinecraftServer server, @NotNull ICommandSender sender, String @NotNull [] args) throws CommandException {
             String name = firstArgOnly(args);
             EntityPlayerMP player = asPlayer(sender);
-            EntityPos point = WorldDataWaypoints.get(player.world).get(name);
-            if (point == null) throw new CommandException("warp.not_found", waypointName(name));
+            EntityPos point = findWayPoint(name, WorldDataWaypoints.get(player.world));
             CapabilityPlayer.PlayerLocations loc = CapabilityPlayer.get(player);
             point.teleport(player, loc);
             sendSuccess(sender, waypointName(name));
@@ -120,9 +125,28 @@ public class CommandWarp {
         }
         @Override
         public void execute(@NotNull MinecraftServer server, @NotNull ICommandSender sender, String @NotNull [] args) throws CommandException {
-            argumentsAtLeast(args, 2);
             EntityPlayerMP player = asPlayer(sender);
             WorldDataWaypoints p = WorldDataWaypoints.get(player.world);
+            if (args[0].equals("list")) {
+                argumentsInLength(args, 1);
+                if (p.wayPoints.isEmpty()) {
+                    throw new CommandException(I18n.format("warps.no_warp"));
+                }
+                int paddingLen = Math.max(p.wayPoints.keySet().stream()
+                                .max(Comparator.comparingInt(String::length))
+                                .get()
+                                .length() + 5,
+                        13);
+
+                sender.sendMessage(
+                        new TextComponentString(
+                                p.wayPoints.object2ObjectEntrySet().stream()
+                                        .map(i -> getWarpInfoMessage(i.getKey(), i.getValue(), paddingLen))
+                                        .collect(Collectors.joining("\n")))
+                );
+                return;
+            }
+
             String name = args[1];
             if (!p.has(name)) throw new CommandException("warp.not_found", name);
             switch (args[0]) {
@@ -133,7 +157,7 @@ public class CommandWarp {
                     break;
                 case "get":
                     argumentsInLength(args, 2);
-                    sender.sendMessage(new TextComponentString(getWarpInfoMessage(name, p.wayPoints.get(name))));
+                    sender.sendMessage(new TextComponentString(getWarpInfoMessage(name, p.get(name), 10)));
                     break;
                 case "move":
                     argumentsInLength(args, 2);
@@ -154,12 +178,11 @@ public class CommandWarp {
         public @NotNull List<String> getTabCompletions(@NotNull MinecraftServer server, @NotNull ICommandSender sender, String @NotNull [] args, @Nullable BlockPos targetPos) {
             switch (args.length) {
                 case 1:
-                    return optionsStartsWith(args[0], "rename", "get", "move", "remove");
+                    return optionsStartsWith(args[0], "rename", "get", "move", "remove", "list");
                 case 2:
-                    return optionsStartsWith(args[0], waypointsName(server));
-                default:
-                    return Collections.emptyList();
+                    if (!args[0].equals("list")) return optionsStartsWith(args[0], waypointsName(server));
             }
+            return Collections.emptyList();
         }
 
         @Override
@@ -168,51 +191,29 @@ public class CommandWarp {
         }
     }
 
-    static class CommandWarpList extends AbstractCommand {
-
-        @Override
-        public @NotNull String getName() {
-            return "warps";
-        }
-
-        @Override
-        public void execute(@NotNull MinecraftServer server, @NotNull ICommandSender sender, String @NotNull [] args) throws CommandException {
-            noArguments(args);
-            WorldDataWaypoints data = WorldDataWaypoints.get(sender.getEntityWorld());
-            if (data.wayPoints.isEmpty()) {
-                throw new CommandException(I18n.format("warps.no_warp"));
-            }
-            sender.sendMessage(
-                    new TextComponentString(
-                            data.wayPoints.object2ObjectEntrySet().stream()
-                                    .map(i -> getWarpInfoMessage(i.getKey(), i.getValue()))
-                                    .collect(Collectors.joining("\n")))
-            );
-        }
+    private static String spaceString(int count) {
+        final char[] res = new char[count];
+        Arrays.fill(res, ' ');
+        return new String(res);
     }
 
-    private static @NotNull String getWarpInfoMessage(String name, EntityPos data) {
-        final int paddingLen = 15;
+    private static @NotNull String getWarpInfoMessage(String name, EntityPos data, int paddingLen) {
         FontRenderer renderer = Minecraft.getMinecraft().fontRenderer;
         int nameWidth = renderer.getStringWidth(name);
         int spaceWidth = renderer.getCharWidth(' ');
         int paddedCount = Math.max(((spaceWidth * paddingLen - nameWidth) / spaceWidth), 0);
 
-        NumberFormat posFormat = NumberFormat.getNumberInstance();
-        posFormat.setMaximumFractionDigits(1);
-        posFormat.setRoundingMode(RoundingMode.HALF_UP);
         return "§2" +
                 name +
-                Strings.repeat(" ", paddedCount) +
+                spaceString(paddedCount) +
                 "§8-" +
-                Strings.repeat(" ", 7) +
+                spaceString(5) +
                 "§d" +
                 data;
     }
 
     public static void init(FMLServerStartingEvent e) {
         e.registerServerCommand(new CommandWarpTeleport());
-        e.registerServerCommand(new CommandWarpList());
         e.registerServerCommand(new CommandWarpDel());
         e.registerServerCommand(new CommandWarpSet());
         e.registerServerCommand(new CommandWarpOperation());

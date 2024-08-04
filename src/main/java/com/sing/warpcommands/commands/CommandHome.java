@@ -6,7 +6,6 @@ import com.sing.warpcommands.utils.EntityPos;
 import net.minecraft.client.resources.I18n;
 import net.minecraft.command.CommandException;
 import net.minecraft.command.ICommandSender;
-import net.minecraft.command.WrongUsageException;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.math.BlockPos;
@@ -16,6 +15,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 public class CommandHome {
     static class CommandHomeTeleport extends AbstractCommand {
@@ -29,15 +29,12 @@ public class CommandHome {
         public void execute(@NotNull MinecraftServer server, @NotNull ICommandSender sender, String[] args) throws CommandException {
             noArguments(args);
             EntityPlayerMP player = asPlayer(sender);
-            CapabilityPlayer.PlayerLocations loc = CapabilityPlayer.get(player);
-            if (loc == null) return;
-            EntityPos home = loc.homePosition;
-            if (home == null) {
-                @Nullable
-                BlockPos bedLocation = player.getBedLocation(0);
-                if (bedLocation == null) throw new CommandException(I18n.format("home.tip"));
-                home = new EntityPos(bedLocation);
-            }
+            CapabilityPlayer.PlayerLocations loc = nonNull(CapabilityPlayer.get(player));
+            EntityPos home = Optional.ofNullable(
+                            Optional.ofNullable(loc.homePosition)
+                                    .orElseGet(() -> new EntityPos(player.getBedLocation(0).add(0.5, 0.1, 0.5)))
+                    )
+                    .orElseThrow(() -> new CommandException(I18n.format("home.tip")));
             home.teleport(player, loc);
             sendSuccess(sender);
         }
@@ -52,19 +49,16 @@ public class CommandHome {
 
         @Override
         public void execute(@NotNull MinecraftServer server, @NotNull ICommandSender sender, String[] args) throws CommandException {
-            if (args.length > 1) throw new WrongUsageException(this.getUsage(sender));
             EntityPlayerMP player = asPlayer(sender);
-            CapabilityPlayer.PlayerLocations loc = CapabilityPlayer.get(player);
-            if (loc == null) return;
-            if (args.length == 1) {
-                if (args[0].equals("reset")) {
-                    loc.homePosition = null;
-                    sendSuccess("sethome.reset", sender);
-                    return;
-                } else throw new WrongUsageException(this.getUsage(sender));
-            }
-            loc.homePosition = new EntityPos(player);
-            sendSuccess(sender);
+            CapabilityPlayer.PlayerLocations loc = nonNull(CapabilityPlayer.get(player));
+            if (args.length == 0) {
+                loc.homePosition = new EntityPos(player);
+                sendSuccess(sender);
+            } else if (args.length == 1) {
+                if (!args[0].equals("reset")) badUsage();
+                loc.homePosition = null;
+                sendSuccess("sethome.reset", sender);
+            } else badUsage();
         }
 
         @Override

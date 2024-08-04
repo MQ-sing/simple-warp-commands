@@ -7,8 +7,8 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.text.TextComponentTranslation;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
-import javax.annotation.Nullable;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -66,10 +66,6 @@ public abstract class AbstractCommand implements ICommand {
         if (args.length != len) badUsage();
     }
 
-    public void argumentsAtLeast(String[] args, int len) throws WrongUsageException {
-        if (args.length < len) badUsage();
-    }
-
     public String firstArgOnly(String[] args) throws WrongUsageException {
         if (args.length != 1) badUsage();
         return args[0];
@@ -88,7 +84,8 @@ public abstract class AbstractCommand implements ICommand {
     }
 
     @Contract("null->fail")
-    public void nonNull(Object obj) throws CommandException {
+    public <T> T nonNull(T obj) throws CommandException {
         if (obj == null) throw new CommandException("Null");
+        return obj;
     }
 }

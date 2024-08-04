@@ -22,4 +22,7 @@ public class Configure {
 
     @Config.Comment("Allow cross-dimension teleporting")
     public static boolean allowDimensionCross = true;
+
+    @Config.Comment("Shows coordinates of waypoints when using /warpopt")
+    public static boolean showCoordinates = true;
 }
