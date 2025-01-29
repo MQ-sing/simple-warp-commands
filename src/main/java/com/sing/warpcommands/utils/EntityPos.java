@@ -4,7 +4,7 @@ import com.sing.warpcommands.Configure;
 import com.sing.warpcommands.data.CapabilityPlayer;
 import net.minecraft.client.resources.I18n;
 import net.minecraft.command.CommandException;
-import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagDouble;
@@ -12,22 +12,19 @@ import net.minecraft.nbt.NBTTagFloat;
 import net.minecraft.nbt.NBTTagInt;
 import net.minecraft.util.math.BlockPos;
 import net.minecraftforge.common.DimensionManager;
-import net.minecraftforge.common.util.INBTSerializable;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 
-import javax.annotation.Nullable;
 
-public class EntityPos implements INBTSerializable<NBTTagCompound> {
+public class EntityPos {
     public double x;
     public double y;
     public double z;
     public float yaw;
     public float pitch;
-
     public int dim;
 
-    EntityPos(double x, double y, double z, float yaw, float pitch, int dim) {
+    public void relocate(int dim, double x, double y, double z, float yaw, float pitch) {
         this.x = x;
         this.y = y;
         this.z = z;
@@ -36,10 +33,7 @@ public class EntityPos implements INBTSerializable<NBTTagCompound> {
         this.dim = dim;
     }
 
-    public EntityPos() {
-    }
-
-    public EntityPos(@NotNull BlockPos pos) {
+    public void relocate(BlockPos pos) {
         this.x = pos.getX();
         this.y = pos.getY();
         this.z = pos.getZ();
@@ -47,22 +41,60 @@ public class EntityPos implements INBTSerializable<NBTTagCompound> {
         this.pitch = 90;
     }
 
-    public EntityPos(EntityPlayer player) {
-        this(player.posX, player.posY, player.posZ, player.rotationYaw, player.rotationPitch, player.dimension);
+    public void relocate(@NotNull Entity entity) {
+        relocate(entity.dimension, entity.posX, entity.posY, entity.posZ, entity.rotationYaw, entity.rotationPitch);
     }
 
-    public void teleport(EntityPlayerMP e, @Nullable CapabilityPlayer.PlayerLocations cap) throws CommandException {
+    public EntityPos(double x, double y, double z, float yaw, float pitch, int dim) {
+        this.x = x;
+        this.y = y;
+        this.z = z;
+        this.yaw = yaw;
+        this.pitch = pitch;
+        this.dim = dim;
+    }
+
+    private EntityPos(NBTTagCompound tag) {
+        this(
+                tag.getDouble("x"),
+                tag.getDouble("y"),
+                tag.getDouble("z"),
+                tag.getFloat("yaw"),
+                tag.getFloat("pitch"),
+                tag.getInteger("dim")
+        );
+    }
+
+    public EntityPos(int dim, @NotNull BlockPos pos) {
+        relocate(pos);
+    }
+
+    public EntityPos(Entity entity) {
+        relocate(entity);
+    }
+
+    public static void teleport(@NotNull EntityPlayerMP target, EntityPlayerMP e) throws CommandException {
+        new EntityPos(target).teleport(e);
+    }
+
+    public static void teleport(@NotNull BlockPos pos, EntityPlayerMP e) throws CommandException {
+        new EntityPos(e.dimension, pos).teleport(e);
+    }
+
+    public void teleport(EntityPlayerMP e) throws CommandException {
         if (!DimensionManager.isDimensionRegistered(dim)) throw new CommandException("teleport.no_dim");
-        if (cap != null) cap.backPosition = new EntityPos(e);
+        CapabilityPlayer.PlayerLocations cap = CapabilityPlayer.get(e);
+        if (cap != null) cap.backPosition.position = new EntityPos(e);
+        e.dismountRidingEntity();
         if (e.dimension == dim) {
             e.connection.setPlayerLocation(x, y, z, yaw, pitch);
         } else {
             if (!Configure.allowDimensionCross) throw new CommandException(I18n.format("teleport.no_dimension_cross"));
-            e.server.getPlayerList().transferPlayerToDimension(e, dim, (world, entity, _unused) -> entity.setLocationAndAngles(x, y, z, yaw, pitch));
+            e.server.getPlayerList().transferPlayerToDimension(e, dim, (world, entity, __) -> entity.setLocationAndAngles(x, y, z, yaw, pitch));
         }
     }
 
-    @Override
+
     public NBTTagCompound serializeNBT() {
         NBTTagCompound nbt = new NBTTagCompound();
         nbt.setTag("x", new NBTTagDouble(x));
@@ -74,23 +106,10 @@ public class EntityPos implements INBTSerializable<NBTTagCompound> {
         nbt.setTag("dim", new NBTTagInt(dim));
         return nbt;
     }
-
-    @Override
-    public void deserializeNBT(NBTTagCompound nbt) {
-        x = nbt.getDouble("x");
-        y = nbt.getDouble("y");
-        z = nbt.getDouble("z");
-        yaw = nbt.getFloat("yaw");
-        pitch = nbt.getFloat("pitch");
-        dim = nbt.getInteger("dim");
-    }
-
     @Contract(value = "null->null;!null->!null", pure = true)
     public static EntityPos fromNBT(NBTTagCompound nbt) {
         if (nbt == null) return null;
-        EntityPos pos = new EntityPos();
-        pos.deserializeNBT(nbt);
-        return pos;
+        return new EntityPos(nbt);
     }
 
     @Override

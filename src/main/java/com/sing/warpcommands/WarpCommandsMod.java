@@ -1,12 +1,8 @@
 package com.sing.warpcommands;
 
 import com.sing.simple_warp_commands.Tags;
-import com.sing.warpcommands.commands.CommandBack;
-import com.sing.warpcommands.commands.CommandHome;
-import com.sing.warpcommands.commands.CommandNewTeleport;
-import com.sing.warpcommands.commands.CommandWarp;
+import com.sing.warpcommands.commands.*;
 import com.sing.warpcommands.data.CapabilityPlayer;
-import com.sing.warpcommands.utils.EntityPos;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.nbt.NBTTagCompound;
@@ -32,15 +28,14 @@ public class WarpCommandsMod {
     @Mod.EventHandler
     void serverInit(FMLServerStartingEvent e) {
         if (Configure.enableWarpCommand) CommandWarp.init(e);
-        if (Configure.enableHomeCommand) {
-            CommandHome.init(e);
+        if (Configure.enableHomeCommand) CommandHome.init(e);
+        if (Configure.enableBackCommand) CommandBack.init(e);
+        if (Configure.enableSpawnCommand) CommandSpawn.init(e);
+        if (Configure.enablePosCommand) CommandPos.init(e);
+        if (Configure.enableTpPlayerCommand) {
+            e.registerServerCommand(new CommandTeleportPlayer());
         }
-        if (Configure.enableBackCommand) {
-            CommandBack.init(e);
-        }
-        if (Configure.enableTpPlusCommand) {
-            e.registerServerCommand(new CommandNewTeleport());
-        }
+        if (Configure.enableByeCommand) e.registerServerCommand(new CommandBye());
     }
 
     @SubscribeEvent
@@ -55,16 +50,17 @@ public class WarpCommandsMod {
         CapabilityPlayer.PlayerLocations original = CapabilityPlayer.get(e.getOriginal());
         CapabilityPlayer.PlayerLocations p = CapabilityPlayer.get(e.getEntityPlayer());
         if (p == null || original == null) return;
-        p.homePosition = original.homePosition;
-        p.backPosition = original.backPosition;
+        p.homePosition.position = original.homePosition.position;
+        p.backPosition.position = original.backPosition.position;
+        p.recordedPosition.position = original.recordedPosition.position;
     }
 
     @SubscribeEvent
     static void onEntityDeath(LivingDeathEvent e) {
-        if (!(e.getEntity() instanceof EntityPlayer)) return;
+        if (!Configure.enableBackRecordDeath || !(e.getEntity() instanceof EntityPlayer)) return;
         EntityPlayer player = (EntityPlayer) e.getEntity();
         CapabilityPlayer.PlayerLocations l = CapabilityPlayer.get(player);
-        if (l != null) l.backPosition = new EntityPos(player);
+        if (l != null) l.backPosition.relocate(player);
     }
 
     public static ResourceLocation id(String id) {

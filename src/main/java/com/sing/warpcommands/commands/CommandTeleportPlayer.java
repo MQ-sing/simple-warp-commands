@@ -1,7 +1,6 @@
 package com.sing.warpcommands.commands;
 
 import com.sing.warpcommands.commands.utils.AbstractCommand;
-import com.sing.warpcommands.data.CapabilityPlayer;
 import com.sing.warpcommands.utils.EntityPos;
 import net.minecraft.client.resources.I18n;
 import net.minecraft.command.CommandException;
@@ -19,7 +18,7 @@ import java.util.stream.Collectors;
 
 import static net.minecraft.command.CommandBase.notifyCommandListener;
 
-public class CommandNewTeleport extends AbstractCommand {
+public class CommandTeleportPlayer extends AbstractCommand {
 
     @Override
     public @NotNull String getName() {
@@ -36,11 +35,10 @@ public class CommandNewTeleport extends AbstractCommand {
                 server.getPlayerList()
                         .getPlayers().stream()
                         .filter(i -> i != sender)
-                        .findAny()
+                        .findFirst()
         ).orElseThrow(() -> new CommandException(I18n.format("tpplus.no_target")));
-
         EntityPlayerMP player = asPlayer(sender);
-        new EntityPos(target).teleport(player, player.getCapability(CapabilityPlayer.cap, null));
+        EntityPos.teleport(target, player);
         notifyCommandListener(sender, this, "tpplus.success", target.getName());
     }
 

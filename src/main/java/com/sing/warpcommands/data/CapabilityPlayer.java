@@ -1,6 +1,8 @@
 package com.sing.warpcommands.data;
 
 import com.sing.warpcommands.utils.EntityPos;
+import net.minecraft.client.resources.I18n;
+import net.minecraft.command.CommandException;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.nbt.NBTBase;
@@ -22,26 +24,60 @@ public class CapabilityPlayer {
         @Override
         public NBTBase writeNBT(Capability<PlayerLocations> capability, PlayerLocations instance, EnumFacing side) {
             NBTTagCompound compound = new NBTTagCompound();
-            if (instance.homePosition != null)
-                compound.setTag("home", instance.homePosition.serializeNBT());
-            if (instance.backPosition != null)
-                compound.setTag("back", instance.backPosition.serializeNBT());
+            instance.homePosition.serializeAs("home", compound);
+            instance.recordedPosition.serializeAs("recorded", compound);
+            instance.backPosition.serializeAs("back", compound);
             return compound;
         }
 
         @Override
         public void readNBT(Capability<PlayerLocations> capability, PlayerLocations instance, EnumFacing side, NBTBase nbt) {
             NBTTagCompound compound = (NBTTagCompound) nbt;
-            instance.homePosition = EntityPos.fromNBT((NBTTagCompound) compound.getTag("home"));
-            instance.backPosition = EntityPos.fromNBT((NBTTagCompound) compound.getTag("back"));
+            try {
+                instance.homePosition.readFromNBT((NBTTagCompound) compound.getTag("home"));
+                instance.backPosition.readFromNBT((NBTTagCompound) compound.getTag("back"));
+                instance.recordedPosition.readFromNBT((NBTTagCompound) compound.getTag("recorded"));
+            } catch (ClassCastException ignored) {
+            }
         }
     }
 
     public static class PlayerLocations {
-        @Nullable
-        public EntityPos homePosition;
-        @Nullable
-        public EntityPos backPosition;
+        public static class Position {
+            @Nullable
+            public EntityPos position = null;
+
+            public void teleport(EntityPlayerMP player) throws CommandException {
+                if (position == null) throw new CommandException(I18n.format("locations.notfound"));
+                position.teleport(player);
+            }
+
+            void readFromNBT(NBTTagCompound tag) {
+                position = EntityPos.fromNBT(tag);
+            }
+
+            void serializeAs(String name, NBTTagCompound target) {
+                if (position == null) return;
+                target.setTag(name, position.serializeNBT());
+            }
+
+            public boolean has() {
+                return position != null;
+            }
+
+            public void relocate(@NotNull EntityPlayer e) {
+                if (position == null) position = new EntityPos(e);
+                else position.relocate(e);
+            }
+
+            public void clear() {
+                position = null;
+            }
+        }
+
+        public final Position homePosition = new Position();
+        public final Position backPosition = new Position();
+        public final Position recordedPosition = new Position();
     }
 
     public static class ProvidePlayer implements ICapabilitySerializable<NBTTagCompound>, ICapabilityProvider {

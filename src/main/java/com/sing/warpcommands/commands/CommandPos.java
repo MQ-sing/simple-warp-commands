@@ -11,43 +11,42 @@ import org.jetbrains.annotations.NotNull;
 import java.util.Collections;
 import java.util.List;
 
-public class CommandBack {
-
-    static class CommandBackTeleport extends AbstractCommand {
+public class CommandPos {
+    static class CommandPosTeleport extends AbstractCommand {
         @Override
         public @NotNull String getName() {
-            return "back";
+            return "pos";
         }
 
         @Override
         public void execute(@NotNull MinecraftServer server, @NotNull ICommandSender sender, String @NotNull [] args) throws CommandException {
             EntityPlayerMP player = playerOperand(sender, args);
-            getPlayerCapabilities(player).backPosition.teleport(player);
+            getPlayerCapabilities(player).recordedPosition.teleport(player);
         }
     }
 
-    static class CommandSetBack extends AbstractCommand {
+    static class CommandSetPos extends AbstractCommand {
 
         @Override
         public @NotNull String getName() {
-            return "setback";
+            return "setpos";
         }
 
         @Override
         public void execute(@NotNull MinecraftServer server, @NotNull ICommandSender sender, String @NotNull [] args) throws CommandException {
             EntityPlayerMP player = playerOperand(sender, args);
-            getPlayerCapabilities(player).backPosition.relocate(player);
+            getPlayerCapabilities(player).recordedPosition.relocate(player);
             sendSuccessSet(sender);
         }
 
         @Override
         public @NotNull List<String> getAliases() {
-            return Collections.singletonList("back!");
+            return Collections.singletonList("pos!");
         }
     }
 
     public static void init(FMLServerStartingEvent e) {
-        e.registerServerCommand(new CommandBackTeleport());
-        e.registerServerCommand(new CommandSetBack());
+        e.registerServerCommand(new CommandPosTeleport());
+        e.registerServerCommand(new CommandSetPos());
     }
 }

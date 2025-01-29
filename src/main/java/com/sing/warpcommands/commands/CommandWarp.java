@@ -1,42 +1,33 @@
 package com.sing.warpcommands.commands;
 
 import com.sing.warpcommands.commands.utils.AbstractCommand;
-import com.sing.warpcommands.data.CapabilityPlayer;
 import com.sing.warpcommands.data.WorldDataWaypoints;
 import com.sing.warpcommands.utils.EntityPos;
-import it.unimi.dsi.fastutil.objects.ObjectSet;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.resources.I18n;
 import net.minecraft.command.CommandException;
 import net.minecraft.command.ICommandSender;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.text.TextComponentString;
+import net.minecraft.world.World;
 import net.minecraftforge.fml.common.event.FMLServerStartingEvent;
 import org.jetbrains.annotations.NonNls;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 public class CommandWarp {
 
-    private static ObjectSet<String> waypointsName(MinecraftServer server) {
-        WorldDataWaypoints p = WorldDataWaypoints.get(server.getEntityWorld());
-        return p.wayPoints.keySet();
-    }
-
-    @NotNull
-    private static EntityPos findWayPoint(String name, WorldDataWaypoints data) throws CommandException {
-        EntityPos p = data.get(name);
-        if (p == null) throw new CommandException("warp.not_found", name);
-        return p;
+    private static Set<String> waypointsName(World world) {
+        WorldDataWaypoints.IWaypointList p = WorldDataWaypoints.get(world);
+        return p.keySet();
     }
 
     private static String waypointName(String s) {
@@ -53,15 +44,15 @@ public class CommandWarp {
         public void execute(@NotNull MinecraftServer server, @NotNull ICommandSender sender, String @NotNull [] args) throws CommandException {
             String name = firstArgOnly(args);
             EntityPlayerMP player = asPlayer(sender);
-            EntityPos point = findWayPoint(name, WorldDataWaypoints.get(player.world));
-            CapabilityPlayer.PlayerLocations loc = CapabilityPlayer.get(player);
-            point.teleport(player, loc);
+            EntityPos p = WorldDataWaypoints.get(player.world).get(name);
+            if (p == null) throw new CommandException("warp.not_found", name);
+            p.teleport(player);
             sendSuccess(sender, waypointName(name));
         }
 
         @Override
         public @NotNull List<String> getTabCompletions(@NotNull MinecraftServer server, @NotNull ICommandSender sender, String @NotNull [] args, @Nullable BlockPos targetPos) {
-            return optionsStartsWith(args[0], waypointsName(server));
+            return optionsStartsWith(args[0], waypointsName(sender.getEntityWorld()));
         }
     }
 
@@ -76,12 +67,12 @@ public class CommandWarp {
         @Override
         public void execute(@NotNull MinecraftServer server, @NotNull ICommandSender sender, String @NotNull [] args) throws CommandException {
             String name = firstArgOnly(args);
-            EntityPlayerMP player = asPlayer(sender);
-            WorldDataWaypoints data = WorldDataWaypoints.get(player.world);
+            Entity entity = asEntity(sender);
+            WorldDataWaypoints.IWaypointList data = WorldDataWaypoints.get(entity.world);
             if (data.has(name)) {
-                throw new CommandException(I18n.format("setwarp.replace", "'" + name + "'"));
+                throw new CommandException(I18n.format("setwarp.replace", name));
             }
-            data.set(name, new EntityPos(player));
+            data.set(name, new EntityPos(entity));
             sendSuccess(sender, waypointName(name));
         }
 
@@ -100,8 +91,8 @@ public class CommandWarp {
         @Override
         public void execute(@NotNull MinecraftServer server, @NotNull ICommandSender sender, String @NotNull [] args) throws CommandException {
             String name = firstArgOnly(args);
-            WorldDataWaypoints data = WorldDataWaypoints.get(sender.getEntityWorld());
-            if (!data.remove(name)) throw new CommandException("warp.not_found", name);
+            WorldDataWaypoints.IWaypointList data = WorldDataWaypoints.get(sender.getEntityWorld());
+            if (data.remove(name) == null) throw new CommandException("warp.not_found", name);
             sendSuccess(sender, waypointName(name));
         }
 
@@ -112,7 +103,7 @@ public class CommandWarp {
 
         @Override
         public @NotNull List<String> getTabCompletions(@NotNull MinecraftServer server, @NotNull ICommandSender sender, String @NotNull [] args, @Nullable BlockPos targetPos) {
-            return optionsStartsWith(args[0], waypointsName(server));
+            return optionsStartsWith(args[0], waypointsName(sender.getEntityWorld()));
         }
     }
 
@@ -126,21 +117,19 @@ public class CommandWarp {
         @Override
         public void execute(@NotNull MinecraftServer server, @NotNull ICommandSender sender, String @NotNull [] args) throws CommandException {
             EntityPlayerMP player = asPlayer(sender);
-            WorldDataWaypoints p = WorldDataWaypoints.get(player.world);
-            if (args[0].equals("list")) {
-                argumentsInLength(args, 1);
-                if (p.wayPoints.isEmpty()) {
-                    throw new CommandException(I18n.format("warps.no_warp"));
-                }
-                int paddingLen = Math.max(p.wayPoints.keySet().stream()
+            WorldDataWaypoints.IWaypointList p = WorldDataWaypoints.get(player.world);
+            if (args.length == 0 || args[0].equals("list")) {
+                if (args.length > 1) badUsage();
+                int paddingLen = Math.max(p.keySet().stream()
                                 .max(Comparator.comparingInt(String::length))
-                                .get()
+                                .orElseThrow(() -> new CommandException(I18n.format("warps.no_warp")))
                                 .length() + 5,
                         13);
 
+
                 sender.sendMessage(
                         new TextComponentString(
-                                p.wayPoints.object2ObjectEntrySet().stream()
+                                StreamSupport.stream(p.entries().spliterator(), false)
                                         .map(i -> getWarpInfoMessage(i.getKey(), i.getValue(), paddingLen))
                                         .collect(Collectors.joining("\n")))
                 );
@@ -152,7 +141,7 @@ public class CommandWarp {
             switch (args[0]) {
                 case "rename":
                     argumentsInLength(args, 3);
-                    p.set(args[2], p.wayPoints.remove(name));
+                    p.set(args[2], p.remove(name));
                     sendSuccess("warpopt.rename", sender, waypointName(name), waypointName(args[2]));
                     break;
                 case "get":
@@ -180,7 +169,8 @@ public class CommandWarp {
                 case 1:
                     return optionsStartsWith(args[0], "rename", "get", "move", "remove", "list");
                 case 2:
-                    if (!args[0].equals("list")) return optionsStartsWith(args[0], waypointsName(server));
+                    if (!args[0].equals("list"))
+                        return optionsStartsWith(args[0], waypointsName(sender.getEntityWorld()));
             }
             return Collections.emptyList();
         }
