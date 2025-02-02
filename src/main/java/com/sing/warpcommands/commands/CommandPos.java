@@ -1,52 +1,37 @@
 package com.sing.warpcommands.commands;
 
-import com.sing.warpcommands.commands.utils.AbstractCommand;
-import net.minecraft.command.CommandException;
-import net.minecraft.command.ICommandSender;
-import net.minecraft.entity.player.EntityPlayerMP;
-import net.minecraft.server.MinecraftServer;
-import net.minecraftforge.fml.common.event.FMLServerStartingEvent;
-import org.jetbrains.annotations.NotNull;
+import com.mojang.brigadier.CommandDispatcher;
+import com.mojang.brigadier.tree.LiteralCommandNode;
+import com.sing.warpcommands.commands.utils.Utils;
+import com.sing.warpcommands.data.CapabilityPlayer;
+import net.minecraft.command.CommandSource;
+import net.minecraft.entity.player.ServerPlayerEntity;
+import net.minecraft.util.text.TextFormatting;
+import net.minecraft.util.text.TranslationTextComponent;
 
-import java.util.Collections;
-import java.util.List;
+import java.util.Optional;
 
 public class CommandPos {
-    static class CommandPosTeleport extends AbstractCommand {
-        @Override
-        public @NotNull String getName() {
-            return "pos";
-        }
 
-        @Override
-        public void execute(@NotNull MinecraftServer server, @NotNull ICommandSender sender, String @NotNull [] args) throws CommandException {
-            EntityPlayerMP player = playerOperand(sender, args);
-            getPlayerCapabilities(player).recordedPosition.teleport(player);
-        }
-    }
-
-    static class CommandSetPos extends AbstractCommand {
-
-        @Override
-        public @NotNull String getName() {
-            return "setpos";
-        }
-
-        @Override
-        public void execute(@NotNull MinecraftServer server, @NotNull ICommandSender sender, String @NotNull [] args) throws CommandException {
-            EntityPlayerMP player = playerOperand(sender, args);
-            getPlayerCapabilities(player).recordedPosition.relocate(player);
-            sendSuccessSet(sender);
-        }
-
-        @Override
-        public @NotNull List<String> getAliases() {
-            return Collections.singletonList("pos!");
-        }
-    }
-
-    public static void init(FMLServerStartingEvent e) {
-        e.registerServerCommand(new CommandPosTeleport());
-        e.registerServerCommand(new CommandSetPos());
+    public static void register(CommandDispatcher<CommandSource> dispatcher) {
+        //Teleport
+        dispatcher.register(Utils.command("pos").executes((ctx) -> {
+            ServerPlayerEntity player = ctx.getSource().getPlayerOrException();
+            final Optional<CapabilityPlayer.PlayerLocations.Position> pos = CapabilityPlayer.get(player).map(cap -> cap.recordedPosition);
+            if (pos.isPresent()) {
+                pos.get().teleport(player);
+                Utils.sendSuccess("pos", TextFormatting.GOLD, ctx.getSource());
+            }
+            return 1;
+        }));
+        final LiteralCommandNode<CommandSource> setpos = dispatcher.register(Utils.command("pos!").executes((ctx) -> {
+            ServerPlayerEntity player = ctx.getSource().getPlayerOrException();
+            CapabilityPlayer.get(player).ifPresent(cap -> {
+                cap.recordedPosition.relocate(player);
+                ctx.getSource().sendSuccess(new TranslationTextComponent("locations.beset").withStyle(TextFormatting.BLUE), false);
+            });
+            return 1;
+        }));
+        dispatcher.register(Utils.command("setpos").redirect(setpos));
     }
 }

@@ -1,23 +1,18 @@
 package com.sing.warpcommands.commands;
 
-import com.sing.warpcommands.commands.utils.AbstractCommand;
-import net.minecraft.command.CommandException;
-import net.minecraft.command.ICommandSender;
-import net.minecraft.entity.player.EntityPlayerMP;
-import net.minecraft.server.MinecraftServer;
-import org.jetbrains.annotations.NotNull;
+import com.mojang.brigadier.CommandDispatcher;
+import com.mojang.brigadier.tree.LiteralCommandNode;
+import com.sing.warpcommands.commands.utils.Utils;
+import net.minecraft.command.CommandSource;
 
-public class CommandBye extends AbstractCommand {
-
-    @Override
-    public @NotNull String getName() {
-        return "bye";
-    }
-
-    @Override
-    public void execute(@NotNull MinecraftServer server, @NotNull ICommandSender sender, String @NotNull [] args) throws CommandException {
-        noArguments(args);
-        EntityPlayerMP player = asPlayer(sender);
-        player.onKillCommand();
+public class CommandBye {
+    public static void register(CommandDispatcher<CommandSource> dispatcher) {
+        final LiteralCommandNode<CommandSource> bye = dispatcher.register(
+                Utils.command("bye").executes(ctx -> {
+                    ctx.getSource().getEntityOrException().kill();
+                    return 1;
+                })
+        );
+        dispatcher.register(Utils.command("kil").redirect(bye));
     }
 }

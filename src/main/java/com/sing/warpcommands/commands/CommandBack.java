@@ -1,53 +1,32 @@
 package com.sing.warpcommands.commands;
 
-import com.sing.warpcommands.commands.utils.AbstractCommand;
-import net.minecraft.command.CommandException;
-import net.minecraft.command.ICommandSender;
-import net.minecraft.entity.player.EntityPlayerMP;
-import net.minecraft.server.MinecraftServer;
-import net.minecraftforge.fml.common.event.FMLServerStartingEvent;
-import org.jetbrains.annotations.NotNull;
+import com.mojang.brigadier.CommandDispatcher;
+import com.mojang.brigadier.tree.LiteralCommandNode;
+import com.sing.warpcommands.commands.utils.Utils;
+import com.sing.warpcommands.data.CapabilityPlayer;
+import net.minecraft.command.CommandSource;
+import net.minecraft.entity.player.ServerPlayerEntity;
+import net.minecraft.util.text.TextFormatting;
+import net.minecraft.util.text.TranslationTextComponent;
 
-import java.util.Collections;
-import java.util.List;
+import java.util.Optional;
 
 public class CommandBack {
-
-    static class CommandBackTeleport extends AbstractCommand {
-        @Override
-        public @NotNull String getName() {
-            return "back";
-        }
-
-        @Override
-        public void execute(@NotNull MinecraftServer server, @NotNull ICommandSender sender, String @NotNull [] args) throws CommandException {
-            EntityPlayerMP player = playerOperand(sender, args);
-            getPlayerCapabilities(player).backPosition.teleport(player);
-        }
-    }
-
-    static class CommandSetBack extends AbstractCommand {
-
-        @Override
-        public @NotNull String getName() {
-            return "setback";
-        }
-
-        @Override
-        public void execute(@NotNull MinecraftServer server, @NotNull ICommandSender sender, String @NotNull [] args) throws CommandException {
-            EntityPlayerMP player = playerOperand(sender, args);
-            getPlayerCapabilities(player).backPosition.relocate(player);
-            sendSuccessSet(sender);
-        }
-
-        @Override
-        public @NotNull List<String> getAliases() {
-            return Collections.singletonList("back!");
-        }
-    }
-
-    public static void init(FMLServerStartingEvent e) {
-        e.registerServerCommand(new CommandBackTeleport());
-        e.registerServerCommand(new CommandSetBack());
+    public static void register(CommandDispatcher<CommandSource> dispatcher) {
+        dispatcher.register(Utils.command("back").executes(ctx -> {
+            ServerPlayerEntity player = ctx.getSource().getPlayerOrException();
+            final Optional<CapabilityPlayer.PlayerLocations.Position> pos = CapabilityPlayer.get(player).map(cap -> cap.backPosition);
+            if (pos.isPresent()) {
+                pos.get().teleport(player);
+            }
+            return 1;
+        }));
+        final LiteralCommandNode<CommandSource> setback = dispatcher.register(Utils.command("back!").executes(ctx -> {
+            ServerPlayerEntity player = ctx.getSource().getPlayerOrException();
+            CapabilityPlayer.get(player).ifPresent(cap -> cap.backPosition.relocate(player));
+            ctx.getSource().sendSuccess(new TranslationTextComponent("locations.beset").withStyle(TextFormatting.DARK_BLUE), false);
+            return 1;
+        }));
+        dispatcher.register(Utils.command("setback").redirect(setback));
     }
 }

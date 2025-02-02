@@ -1,53 +1,74 @@
 package com.sing.warpcommands.commands;
 
-import com.sing.warpcommands.commands.utils.AbstractCommand;
+import com.mojang.brigadier.CommandDispatcher;
+import com.mojang.brigadier.StringReader;
+import com.mojang.brigadier.arguments.ArgumentType;
+import com.mojang.brigadier.context.CommandContext;
+import com.mojang.brigadier.exceptions.CommandSyntaxException;
+import com.mojang.brigadier.suggestion.Suggestions;
+import com.mojang.brigadier.suggestion.SuggestionsBuilder;
+import com.sing.warpcommands.Configure;
+import com.sing.warpcommands.commands.utils.Utils;
 import com.sing.warpcommands.utils.EntityPos;
-import net.minecraft.client.resources.I18n;
-import net.minecraft.command.CommandException;
-import net.minecraft.command.ICommandSender;
-import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.entity.player.EntityPlayerMP;
+import net.minecraft.command.CommandSource;
+import net.minecraft.command.Commands;
+import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.util.math.BlockPos;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+import net.minecraft.world.server.ServerWorld;
 
 import java.util.List;
-import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
-import static net.minecraft.command.CommandBase.notifyCommandListener;
+import static net.minecraft.command.arguments.EntityArgument.NO_PLAYERS_FOUND;
 
-public class CommandTeleportPlayer extends AbstractCommand {
 
-    @Override
-    public @NotNull String getName() {
-        return "tpp";
+public class CommandTeleportPlayer {
+    private static class OtherPlayersArgument implements ArgumentType<String> {
+        @Override
+        public String parse(StringReader stringReader) throws CommandSyntaxException {
+            return stringReader.readString();
+        }
+
+        @Override
+        public <S> CompletableFuture<Suggestions> listSuggestions(CommandContext<S> context, SuggestionsBuilder builder) {
+            if (!(context.getSource() instanceof CommandSource)) return builder.buildFuture();
+            CommandSource source = (CommandSource) context.getSource();
+            ServerWorld world = source.getLevel();
+            List<String> names = world.players().stream().filter(player -> Configure.couldTeleportTo(world.dimension(), player.level.dimension())).map(player -> player.getGameProfile().getName()).collect(Collectors.toList());
+            for (String name : names) {
+                if (Utils.matchesSubStr(builder.getRemaining(), name, (a, starts, b) -> a.startsWith(b, starts)) != -1)
+                    builder.suggest(name);
+            }
+            return builder.buildFuture();
+        }
+
+        public static ServerPlayerEntity player(String name, CommandContext<CommandSource> ctx) throws CommandSyntaxException {
+            final ServerPlayerEntity player = ctx.getSource().getServer().getPlayerList().getPlayerByName(name);
+            if (player == null) throw NO_PLAYERS_FOUND.create();
+            return player;
+        }
     }
 
-    @Override
-    public void execute(@NotNull MinecraftServer server, @NotNull ICommandSender sender, String[] args) throws CommandException {
-        EntityPlayerMP target = (
-                args.length == 1 ?
-                        Optional.ofNullable(
-                                server.getPlayerList().getPlayerByUsername(args[0])
-                        ) :
-                server.getPlayerList()
-                        .getPlayers().stream()
-                        .filter(i -> i != sender)
-                        .findFirst()
-        ).orElseThrow(() -> new CommandException(I18n.format("tpplus.no_target")));
-        EntityPlayerMP player = asPlayer(sender);
-        EntityPos.teleport(target, player);
-        notifyCommandListener(sender, this, "tpplus.success", target.getName());
+    public static void register(CommandDispatcher<CommandSource> dispatcher) {
+        dispatcher.register(Utils.command("tpp").then(
+                Commands.argument("target", new OtherPlayersArgument()).executes(ctx -> {
+                    ServerPlayerEntity player = ctx.getSource().getPlayerOrException();
+                    execute(player, OtherPlayersArgument.player(ctx.getArgument("target", String.class), ctx));
+                    return 1;
+                })
+        ).executes(ctx -> {
+            if (!(ctx.getSource().getEntity() instanceof ServerPlayerEntity)) return 0;
+            ServerPlayerEntity player = (ServerPlayerEntity) ctx.getSource().getEntity();
+            final MinecraftServer server = ctx.getSource().getServer();
+            final List<ServerPlayerEntity> list = server.getPlayerList().getPlayers().stream().filter(otherPlayer -> otherPlayer != player).collect(Collectors.toList());
+            if (list.isEmpty()) throw NO_PLAYERS_FOUND.create();
+            execute(player, list.size() == 1 ? list.get(0) : list.get(player.getRandom().nextInt(list.size())));
+            return 1;
+        }));
     }
 
-    @Override
-    public @NotNull List<String> getTabCompletions(@NotNull MinecraftServer server, @NotNull ICommandSender sender, String @NotNull [] args, @Nullable BlockPos targetPos) {
-        return optionsStartsWith(args[0], server.getPlayerList()
-                .getPlayers().stream()
-                .filter(i -> i != sender)
-                .map(EntityPlayer::getName)
-                .collect(Collectors.toList()));
+    private static void execute(ServerPlayerEntity from, ServerPlayerEntity to) throws CommandSyntaxException {
+        EntityPos.teleport(from, to);
     }
 }

@@ -1,71 +1,49 @@
 package com.sing.warpcommands.data;
 
+import com.mojang.brigadier.exceptions.CommandSyntaxException;
+import com.mojang.brigadier.exceptions.SimpleCommandExceptionType;
 import com.sing.warpcommands.utils.EntityPos;
-import net.minecraft.client.resources.I18n;
-import net.minecraft.command.CommandException;
-import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.entity.player.EntityPlayerMP;
-import net.minecraft.nbt.NBTBase;
-import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.util.EnumFacing;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.player.ServerPlayerEntity;
+import net.minecraft.nbt.CompoundNBT;
+import net.minecraft.util.Direction;
+import net.minecraft.util.text.TranslationTextComponent;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.capabilities.CapabilityInject;
 import net.minecraftforge.common.capabilities.ICapabilityProvider;
 import net.minecraftforge.common.capabilities.ICapabilitySerializable;
+import net.minecraftforge.common.util.INBTSerializable;
+import net.minecraftforge.common.util.LazyOptional;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Objects;
-
 public class CapabilityPlayer {
-    public static class Data implements Capability.IStorage<PlayerLocations> {
 
-        @Nullable
-        @Override
-        public NBTBase writeNBT(Capability<PlayerLocations> capability, PlayerLocations instance, EnumFacing side) {
-            NBTTagCompound compound = new NBTTagCompound();
-            instance.homePosition.serializeAs("home", compound);
-            instance.recordedPosition.serializeAs("recorded", compound);
-            instance.backPosition.serializeAs("back", compound);
-            return compound;
-        }
-
-        @Override
-        public void readNBT(Capability<PlayerLocations> capability, PlayerLocations instance, EnumFacing side, NBTBase nbt) {
-            NBTTagCompound compound = (NBTTagCompound) nbt;
-            try {
-                instance.homePosition.readFromNBT((NBTTagCompound) compound.getTag("home"));
-                instance.backPosition.readFromNBT((NBTTagCompound) compound.getTag("back"));
-                instance.recordedPosition.readFromNBT((NBTTagCompound) compound.getTag("recorded"));
-            } catch (ClassCastException ignored) {
-            }
-        }
-    }
-
-    public static class PlayerLocations {
+    public static class PlayerLocations implements INBTSerializable<CompoundNBT> {
         public static class Position {
+            private static final SimpleCommandExceptionType NOT_FOUND = new SimpleCommandExceptionType(new TranslationTextComponent("locations.notfound"));
             @Nullable
             public EntityPos position = null;
 
-            public void teleport(EntityPlayerMP player) throws CommandException {
-                if (position == null) throw new CommandException(I18n.format("locations.notfound"));
+            public void teleport(ServerPlayerEntity player) throws CommandSyntaxException {
+                if (position == null) throw NOT_FOUND.create();
                 position.teleport(player);
             }
 
-            void readFromNBT(NBTTagCompound tag) {
+            void readFromNBT(CompoundNBT tag) {
                 position = EntityPos.fromNBT(tag);
             }
 
-            void serializeAs(String name, NBTTagCompound target) {
+            void serializeAs(String name, CompoundNBT target) {
                 if (position == null) return;
-                target.setTag(name, position.serializeNBT());
+                target.put(name, position.serializeNBT());
             }
 
-            public boolean has() {
+            public boolean exist() {
                 return position != null;
             }
 
-            public void relocate(@NotNull EntityPlayer e) {
+            public void relocate(@NotNull PlayerEntity e) {
                 if (position == null) position = new EntityPos(e);
                 else position.relocate(e);
             }
@@ -73,49 +51,61 @@ public class CapabilityPlayer {
             public void clear() {
                 position = null;
             }
+
+            public String toString() {
+                return position == null ? "null" : position.toString();
+            }
         }
 
         public final Position homePosition = new Position();
         public final Position backPosition = new Position();
         public final Position recordedPosition = new Position();
+
+        @NotNull
+        public CompoundNBT serializeNBT() {
+            CompoundNBT compound = new CompoundNBT();
+            this.homePosition.serializeAs("home", compound);
+            this.recordedPosition.serializeAs("recorded", compound);
+            this.backPosition.serializeAs("back", compound);
+            return compound;
+        }
+
+        public void deserializeNBT(CompoundNBT nbt) {
+            if (nbt.contains("home")) this.homePosition.readFromNBT(nbt.getCompound("home"));
+            if (nbt.contains("back")) this.backPosition.readFromNBT(nbt.getCompound("back"));
+            if (nbt.contains("recorded")) this.recordedPosition.readFromNBT(nbt.getCompound("recorded"));
+        }
     }
 
-    public static class ProvidePlayer implements ICapabilitySerializable<NBTTagCompound>, ICapabilityProvider {
-        private final PlayerLocations locations = new PlayerLocations();
-        public static final Capability.IStorage<PlayerLocations> storage = cap.getStorage();
+    public static class ProvidePlayer implements ICapabilitySerializable<CompoundNBT>, ICapabilityProvider {
+        private PlayerLocations locations = null;
 
-        @Override
-        public boolean hasCapability(@NotNull Capability<?> capability, @Nullable EnumFacing facing) {
-            return cap.equals(capability);
+        private PlayerLocations get() {
+            if (locations == null) locations = new PlayerLocations();
+            return locations;
         }
-
-        @Nullable
         @Override
-        @SuppressWarnings("unchecked")
-        public <T> T getCapability(@NotNull Capability<T> capability, @Nullable EnumFacing facing) {
-            if (!hasCapability(capability, facing)) return null;
-            return (T) locations;
+        public <T> @NotNull LazyOptional<T> getCapability(@NotNull Capability<T> capability, @Nullable Direction facing) {
+            return capability == cap ? LazyOptional.of(this::get).cast() : LazyOptional.empty();
         }
 
         @Override
-        public NBTTagCompound serializeNBT() {
-            NBTTagCompound compound = new NBTTagCompound();
-            compound.setTag("PlayerLocations", Objects.requireNonNull(storage.writeNBT(cap, locations, null)));
+        public CompoundNBT serializeNBT() {
+            CompoundNBT compound = new CompoundNBT();
+            compound.put("PlayerLocations", get().serializeNBT());
             return compound;
         }
 
         @Override
-        public void deserializeNBT(NBTTagCompound nbt) {
-            NBTTagCompound compound = nbt.getCompoundTag("PlayerLocations");
-            storage.readNBT(cap, locations, null, compound);
+        public void deserializeNBT(CompoundNBT nbt) {
+            get().deserializeNBT(nbt.getCompound("PlayerLocations"));
         }
     }
 
     @CapabilityInject(PlayerLocations.class)
     public static Capability<PlayerLocations> cap;
 
-    @Nullable
-    public static CapabilityPlayer.PlayerLocations get(EntityPlayer player) {
+    public static @NotNull LazyOptional<PlayerLocations> get(PlayerEntity player) {
         return player.getCapability(cap, null);
     }
 }

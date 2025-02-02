@@ -1,61 +1,71 @@
 package com.sing.warpcommands.data;
 
+import com.google.common.collect.Maps;
 import com.sing.warpcommands.Configure;
 import com.sing.warpcommands.utils.EntityPos;
-import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
-import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.objects.Object2ObjectMap;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.objects.ObjectSet;
-import net.minecraft.nbt.NBTBase;
-import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.nbt.NBTTagList;
+import net.minecraft.nbt.CompoundNBT;
+import net.minecraft.util.RegistryKey;
+import net.minecraft.util.ResourceLocation;
+import net.minecraft.util.registry.Registry;
 import net.minecraft.world.World;
+import net.minecraft.world.server.ServerWorld;
+import net.minecraft.world.storage.DimensionSavedDataManager;
 import net.minecraft.world.storage.WorldSavedData;
 import net.minecraftforge.common.util.INBTSerializable;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
-import javax.annotation.Nullable;
+import java.security.InvalidParameterException;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class WorldDataWaypoints extends WorldSavedData {
-
+    private static final String NAME = "WayPoints";
     public WorldDataWaypoints(String name) {
         super(name);
         updateConfigure();
     }
 
+    public WorldDataWaypoints() {
+        this(NAME);
+    }
+
     private IWaypointsStorage storage;
 
     public static IWaypointList get(World world) {
-        WorldDataWaypoints data = (WorldDataWaypoints) world.loadData(WorldDataWaypoints.class, "WayPoints");
+        if (!(world instanceof ServerWorld)) throw new InvalidParameterException("Expected a server world");
+        DimensionSavedDataManager manager = ((ServerWorld) world).getServer().overworld().getDataStorage();
+        WorldDataWaypoints data = manager.get(WorldDataWaypoints::new, NAME);
         if (data == null) {
             data = new WorldDataWaypoints("WayPoints");
-            world.setData("WayPoints", data);
+            manager.set(data);
         }
         return data.storage.get(world);
     }
 
     public void updateConfigure() {
-        storage = Configure.areWarpsDimensionsIndependent ? new IndependentWorldWayPoint() : new SharedWorldWayPointStorage();
+        storage = Configure.dimensionIndependentWaypoints.get() ? new IndependentWorldWayPoint() : new SharedWorldWayPointStorage();
     }
 
     @Override
-    public void readFromNBT(NBTTagCompound nbt) {
-        storage.deserializeNBT(nbt.getTagList("WayPoints", 10));
+    public void load(CompoundNBT nbt) {
+        storage.deserializeNBT(nbt.getCompound("WayPoints"));
     }
 
     @Override
-    public @NotNull NBTTagCompound writeToNBT(@NotNull NBTTagCompound nbt) {
-        nbt.setTag("WayPoints", storage.serializeNBT());
+    public @NotNull CompoundNBT save(@NotNull CompoundNBT nbt) {
+        nbt.put("WayPoints", storage.serializeNBT());
         return nbt;
     }
 
-    public interface IWaypointsStorage extends INBTSerializable<NBTTagList> {
+    public interface IWaypointsStorage extends INBTSerializable<CompoundNBT> {
         @Nullable
         IWaypointList get(World world);
     }
@@ -68,14 +78,15 @@ public class WorldDataWaypoints extends WorldSavedData {
 
         boolean has(String name);
 
+        int size();
         @Nullable
         EntityPos remove(String name);
 
         Set<String> keySet();
 
-        Iterable<Map.Entry<String, EntityPos>> entries();
+        Collection<Map.Entry<String, EntityPos>> entries();
 
-        Iterable<EntityPos> values();
+        Collection<EntityPos> values();
     }
 
     public class SharedWaypointList implements IWaypointList {
@@ -90,7 +101,7 @@ public class WorldDataWaypoints extends WorldSavedData {
         @Override
         public void set(String name, EntityPos pos) {
             waypoints.put(name, pos);
-            markDirty();
+            setDirty();
         }
 
         @Override
@@ -101,7 +112,7 @@ public class WorldDataWaypoints extends WorldSavedData {
         @Override
         public @Nullable EntityPos remove(String name) {
             EntityPos removed = this.waypoints.remove(name);
-            if (removed != null) markDirty();
+            if (removed != null) setDirty();
             return removed;
         }
 
@@ -116,15 +127,18 @@ public class WorldDataWaypoints extends WorldSavedData {
         }
 
         @Override
-        public Iterable<EntityPos> values() {
+        public Collection<EntityPos> values() {
             return this.waypoints.values();
+        }
+
+        @Override
+        public int size() {
+            return this.waypoints.size();
         }
     }
 
-    private static NBTTagCompound storeEntityPos(String name, EntityPos pos) {
-        NBTTagCompound nbt = pos.serializeNBT();
-        nbt.setString("name", name);
-        return nbt;
+    private static CompoundNBT storeEntityPos(EntityPos pos) {
+        return pos.serializeNBT();
     }
 
     private class SharedWorldWayPointStorage implements IWaypointsStorage {
@@ -136,21 +150,20 @@ public class WorldDataWaypoints extends WorldSavedData {
         }
 
         @Override
-        public NBTTagList serializeNBT() {
-            NBTTagList list = new NBTTagList();
+        public CompoundNBT serializeNBT() {
+            CompoundNBT nbt = new CompoundNBT();
             for (Map.Entry<String, EntityPos> entry : this.waypointsMap.entries()) {
-                list.appendTag(storeEntityPos(entry.getKey(), entry.getValue()));
+                nbt.put(entry.getKey(), storeEntityPos(entry.getValue()));
             }
-            return list;
+            return nbt;
         }
 
         @Override
-        public void deserializeNBT(NBTTagList nbt) {
+        public void deserializeNBT(CompoundNBT nbt) {
             waypointsMap.waypoints.clear();
-            for (NBTBase nbtBase : nbt) {
-                NBTTagCompound compound = (NBTTagCompound) nbtBase;
-                EntityPos pos = EntityPos.fromNBT(compound);
-                waypointsMap.waypoints.put(compound.getString("name"), pos);
+            for (String name : nbt.getAllKeys()) {
+                EntityPos pos = EntityPos.fromNBT(nbt.getCompound(name));
+                waypointsMap.waypoints.put(name, pos);
             }
         }
     }
@@ -162,7 +175,7 @@ public class WorldDataWaypoints extends WorldSavedData {
         public float yaw;
         public float pitch;
 
-        public EntityPos get(int dim) {
+        public EntityPos get(RegistryKey<World> dim) {
             return new EntityPos(x, y, z, yaw, pitch, dim);
         }
 
@@ -170,16 +183,16 @@ public class WorldDataWaypoints extends WorldSavedData {
             this.x = pos.x;
             this.y = pos.y;
             this.z = pos.z;
-            this.yaw = pos.yaw;
-            this.pitch = pos.pitch;
+            this.yaw = pos.yRot;
+            this.pitch = pos.xRot;
         }
     }
 
     private class IndependentWaypoints implements IWaypointList {
-        private final int dim;
+        private final RegistryKey<World> dim;
         private final Object2ObjectMap<String, IndependentEntityPos> waypoints;
 
-        private IndependentWaypoints(int dim, Object2ObjectMap<String, IndependentEntityPos> waypoints) {
+        private IndependentWaypoints(RegistryKey<World> dim, Object2ObjectMap<String, IndependentEntityPos> waypoints) {
             this.dim = dim;
             this.waypoints = waypoints;
         }
@@ -187,13 +200,15 @@ public class WorldDataWaypoints extends WorldSavedData {
         @Nullable
         @Override
         public EntityPos get(String name) {
-            return waypoints.get(name).get(dim);
+            final IndependentEntityPos pos = waypoints.get(name);
+            if (pos == null) return null;
+            return pos.get(dim);
         }
 
         @Override
         public void set(String name, EntityPos pos) {
             waypoints.put(name, new IndependentEntityPos(pos));
-            markDirty();
+            setDirty();
         }
 
         @Override
@@ -206,7 +221,7 @@ public class WorldDataWaypoints extends WorldSavedData {
         public EntityPos remove(String name) {
             IndependentEntityPos pos = waypoints.remove(name);
             if (pos != null) {
-                markDirty();
+                setDirty();
                 return pos.get(dim);
             }
             return null;
@@ -218,70 +233,53 @@ public class WorldDataWaypoints extends WorldSavedData {
         }
 
         @Override
-        public Iterable<Map.Entry<String, EntityPos>> entries() {
-            Stream<Map.Entry<String, EntityPos>> stream = waypoints.entrySet().stream().map((x) -> new Map.Entry<String, EntityPos>() {
-                        final String key = x.getKey();
-                        EntityPos pos = x.getValue().get(dim);
-
-                        @Override
-                        public String getKey() {
-                            return key;
-                        }
-
-                        @Override
-                        public EntityPos getValue() {
-                            return pos;
-                        }
-
-                        @Override
-                        public EntityPos setValue(EntityPos value) {
-                            pos = value;
-                            return value;
-                        }
-                    }
-            );
-            return stream::iterator;
+        public Collection<Map.Entry<String, EntityPos>> entries() {
+            Stream<Map.Entry<String, EntityPos>> stream = waypoints.entrySet().stream().map(x -> Maps.immutableEntry(x.getKey(), x.getValue().get(dim)));
+            return stream.collect(Collectors.toList());
         }
 
         @Override
-        public Iterable<EntityPos> values() {
-            return this.waypoints.values().stream().map((pos) -> pos.get(dim))::iterator;
+        public Collection<EntityPos> values() {
+            return this.waypoints.values().stream().map((pos) -> pos.get(dim)).collect(Collectors.toList());
+        }
+        @Override
+        public int size() {
+            return this.waypoints.size();
         }
     }
 
     private class IndependentWorldWayPoint implements IWaypointsStorage {
 
-        private final Int2ObjectMap<Object2ObjectMap<String, WorldDataWaypoints.IndependentEntityPos>> waypointsMap = new Int2ObjectOpenHashMap<>();
+        private final Map<RegistryKey<World>, Object2ObjectMap<String, WorldDataWaypoints.IndependentEntityPos>> waypointsMap = new HashMap<>();
 
-        private IndependentWaypoints getForDim(int dim) {
+        private IndependentWaypoints getForDim(RegistryKey<World> dim) {
             return new IndependentWaypoints(dim, this.waypointsMap.computeIfAbsent(dim, (key) -> new Object2ObjectOpenHashMap<>()));
         }
 
         @Override
         public IndependentWaypoints get(World world) {
-            return getForDim(world.provider.getDimension());
+            return getForDim(world.dimension());
         }
 
         @Override
-        public NBTTagList serializeNBT() {
-            NBTTagList list = new NBTTagList();
-            for (Int2ObjectMap.Entry<Object2ObjectMap<String, IndependentEntityPos>> entries : this.waypointsMap.int2ObjectEntrySet()) {
-                int dim = entries.getIntKey();
+        public CompoundNBT serializeNBT() {
+            CompoundNBT nbt = new CompoundNBT();
+            for (Map.Entry<RegistryKey<World>, Object2ObjectMap<String, IndependentEntityPos>> entries : this.waypointsMap.entrySet()) {
                 for (Map.Entry<String, IndependentEntityPos> entry : entries.getValue().entrySet()) {
-                    list.appendTag(storeEntityPos(entry.getKey(), entry.getValue().get(dim)));
+                    nbt.put(entry.getKey(), storeEntityPos(entry.getValue().get(entries.getKey())));
                 }
             }
-            return list;
+            return nbt;
         }
 
         @Override
-        public void deserializeNBT(NBTTagList nbt) {
+        public void deserializeNBT(CompoundNBT nbt) {
             waypointsMap.clear();
-            for (NBTBase tag : nbt) {
-                NBTTagCompound compound = (NBTTagCompound) tag;
-                IndependentWaypoints map = getForDim(compound.getInteger("dim"));
+            for (String name : nbt.getAllKeys()) {
+                final CompoundNBT compound = nbt.getCompound(name);
+                IndependentWaypoints map = getForDim(RegistryKey.create(Registry.DIMENSION_REGISTRY, new ResourceLocation(compound.getString("dim"))));
                 EntityPos pos = EntityPos.fromNBT(compound);
-                map.waypoints.put(compound.getString("name"), new IndependentEntityPos(pos));
+                map.waypoints.put(name, new IndependentEntityPos(pos));
             }
         }
     }
