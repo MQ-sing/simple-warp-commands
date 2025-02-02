@@ -3,7 +3,6 @@ package com.sing.warpcommands.commands;
 import com.sing.warpcommands.commands.utils.AbstractCommand;
 import com.sing.warpcommands.commands.utils.Utils;
 import com.sing.warpcommands.data.CapabilityPlayer;
-import com.sing.warpcommands.utils.EntityPos;
 import net.minecraft.client.resources.I18n;
 import net.minecraft.command.CommandException;
 import net.minecraft.command.ICommandSender;
@@ -38,7 +37,6 @@ public class CommandHome {
                 loc.homePosition.teleport(player);
             } else {
                 Utils.getPlayerBedLocation(player, server)
-                        .map((pos) -> new EntityPos(0, pos))
                         .orElseThrow(() -> new CommandException(I18n.format("home.tip")))
                         .teleport(player);
             }

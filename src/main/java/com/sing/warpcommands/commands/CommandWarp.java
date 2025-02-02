@@ -26,7 +26,6 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public class CommandWarp {
@@ -54,6 +53,7 @@ public class CommandWarp {
                 suggestions.add(new StoreStruct(matchIndex, waypoint.getKey()));
             }
         }
+        // Unluckily, the stupid completion system in 1.12.2 will resort our sorted data.
         return suggestions.stream().sorted(Comparator.comparingInt(i -> i.startIndex)).map(i -> i.name).collect(Collectors.toList());
     }
     static class CommandWarpTeleport extends AbstractCommand {
@@ -142,25 +142,40 @@ public class CommandWarp {
             WorldDataWaypoints.IWaypointList data = WorldDataWaypoints.get(player.world);
             final int dim = player.dimension;
             if (args.length == 0 || args[0].equals("list")) {
+                if (data.size() == 0) throw new CommandException("warps.no_warp");
+                class ListElem implements Comparable<ListElem> {
+                    public final EntityPos pos;
+                    public final String name;
+                    public final double distance;
+
+                    public ListElem(EntityPos pos, String name, Entity entity) {
+                        this.pos = pos;
+                        this.name = name;
+                        this.distance = pos.distanceSquared(entity.posX, entity.posY, entity.posZ);
+                    }
+
+                    @Override
+                    public int compareTo(@NotNull ListElem target) {
+                        return Comparator.<ListElem>comparingDouble(elem -> elem.distance)
+                                .thenComparing(elem -> elem.pos.dim != dim)
+                                .thenComparing(elem -> !Configure.couldTeleportTo(dim, elem.pos.dim))
+                                .thenComparing(elem -> elem.pos.dim)
+                                .thenComparing(elem -> elem.name)
+                                .compare(this, target);
+                    }
+                }
                 if (args.length > 1) badUsage();
-                Map<EntityPos, Double> distances = data.values().stream()
-                        .collect(Collectors.toMap(
-                                Function.identity(),
-                                pos -> pos.dim == dim ?
-                                        pos.distanceSquared(player.posX, player.posY, player.posZ) :
-                                        Double.POSITIVE_INFINITY
-                        ));
+                final Collection<Map.Entry<String, EntityPos>> entries = data.entries();
+                Set<ListElem> elems = new TreeSet<>();
+                for (Map.Entry<String, EntityPos> entry : entries) {
+                    final EntityPos pos = entry.getValue();
+                    elems.add(new ListElem(pos, entry.getKey(), player));
+                }
+
                 sender.sendMessage(
                         Utils.joinTextComponent(
-                                data.entries().stream()
-                                        .sorted(
-                                                Comparator.<Map.Entry<String, EntityPos>>comparingDouble(pos -> distances.get(pos.getValue()))
-                                                        .thenComparing(pos -> pos.getValue().dim != dim)
-                                                        .thenComparing(pos -> !Configure.couldTeleportTo(dim, pos.getValue().dim))
-                                                        .thenComparing(pos -> pos.getValue().dim)
-                                                        .thenComparing(Map.Entry::getKey)
-                                        )
-                                        .map(i -> getWarpInfoMessage(i.getKey(), i.getValue(), Configure.couldTeleportTo(dim, i.getValue().dim)))
+                                elems.stream()
+                                        .map(i -> getWarpInfoMessage(i.name, i.pos, Configure.couldTeleportTo(dim, i.pos.dim)))
                                         .collect(Collectors.toList()),
                                 new TextComponentString("\n"))
                 );
@@ -168,22 +183,29 @@ public class CommandWarp {
             }
             if (args.length < 2) badUsage();
             String name = args[1];
-            if (!data.has(name)) throw new CommandException("warp.not_found", name);
             switch (args[0]) {
                 case "rename":
                     argumentsInLength(args, 3);
-                    data.set(args[2], data.remove(name));
+                    final EntityPos removed = data.remove(name);
+                    if (removed == null) throw new CommandException("warp.not_found", name);
+                    data.set(args[2], removed);
                     sendSuccess("warps.rename", TextFormatting.AQUA, sender, waypointName(name), waypointName(args[2]));
                     break;
-                case "get":
+                case "get": {
+                    final EntityPos pos = data.get(name);
+                    if (pos == null) throw new CommandException("warp.not_found", name);
                     argumentsInLength(args, 2);
-                    sender.sendMessage(getWarpInfoMessage(name, Objects.requireNonNull(data.get(name)), Configure.couldTeleportTo(dim, data.get(name).dim)));
+                    sender.sendMessage(getWarpInfoMessage(name, pos, Configure.couldTeleportTo(dim, pos.dim)));
                     break;
-                case "move":
+                }
+                case "move": {
                     argumentsInLength(args, 2);
-                    data.set(name, new EntityPos(player));
+                    final EntityPos pos = data.get(name);
+                    if (pos == null) throw new CommandException("warp.not_found", name);
+                    pos.relocate(player);
                     sendSuccess("warps.move", TextFormatting.AQUA, sender, waypointName(name));
                     break;
+                }
                 default:
                     badUsage();
             }
@@ -215,12 +237,14 @@ public class CommandWarp {
         final String dataString = data.toString();
         final int dataWidth = renderer.getStringWidth(dataString);
         int paddedCount = Math.max(((Minecraft.getMinecraft().ingameGUI.getChatGUI().getChatWidth() - nameWidth - dataWidth - 5) / spaceWidth), 0);
-        return waypointName(name)
+        final ITextComponent nameComponent = waypointName(name);
+        nameComponent.getStyle().setItalic(!ableToTeleport);
+        return nameComponent
                 .appendSibling(new TextComponentString(
                         dotString(paddedCount)).setStyle(new Style().setColor(TextFormatting.DARK_GRAY)))
                 .appendSibling(
                         new TextComponentString(dataString).setStyle(new Style().setColor(TextFormatting.LIGHT_PURPLE))
-                ).setStyle(new Style().setItalic(!ableToTeleport));
+                );
     }
     public static void init(FMLServerStartingEvent e) {
         e.registerServerCommand(new CommandWarpTeleport());

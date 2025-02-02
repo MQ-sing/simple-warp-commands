@@ -54,7 +54,8 @@ public abstract class AbstractCommand implements ICommand {
     }
 
     public static EntityPlayerMP asPlayer(ICommandSender sender) throws PlayerNotFoundException {
-        if (!(sender instanceof EntityPlayerMP)) throw new PlayerNotFoundException("commands.generic.player.notFound");
+        if (!(sender instanceof EntityPlayerMP))
+            throw new PlayerNotFoundException("commands.generic.player.unspecified");
         return (EntityPlayerMP) sender;
     }
 

@@ -7,7 +7,6 @@ import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.objects.Object2ObjectMap;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
-import it.unimi.dsi.fastutil.objects.ObjectSet;
 import net.minecraft.nbt.NBTBase;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
@@ -20,7 +19,6 @@ import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -43,7 +41,7 @@ public class WorldDataWaypoints extends WorldSavedData {
     }
 
     public void updateConfigure() {
-        storage = Configure.areWarpsDimensionsIndependent ? new IndependentWorldWayPoint() : new SharedWorldWayPointStorage();
+        storage = Configure.warpsDimensionLocked ? new IndependentWorldWayPoint() : new SharedWorldWayPointStorage();
     }
 
     @Override
@@ -74,11 +72,7 @@ public class WorldDataWaypoints extends WorldSavedData {
         @Nullable
         EntityPos remove(String name);
 
-        Set<String> keySet();
-
         Collection<Map.Entry<String, EntityPos>> entries();
-
-        Collection<EntityPos> values();
     }
 
     public class SharedWaypointList implements IWaypointList {
@@ -109,18 +103,8 @@ public class WorldDataWaypoints extends WorldSavedData {
         }
 
         @Override
-        public Set<String> keySet() {
-            return this.waypoints.keySet();
-        }
-
-        @Override
         public Collection<Map.Entry<String, EntityPos>> entries() {
             return this.waypoints.entrySet();
-        }
-
-        @Override
-        public Collection<EntityPos> values() {
-            return this.waypoints.values();
         }
 
         @Override
@@ -222,20 +206,11 @@ public class WorldDataWaypoints extends WorldSavedData {
             return null;
         }
 
-        @Override
-        public ObjectSet<String> keySet() {
-            return waypoints.keySet();
-        }
 
         @Override
         public Collection<Map.Entry<String, EntityPos>> entries() {
             Stream<Map.Entry<String, EntityPos>> stream = waypoints.entrySet().stream().map(x -> Maps.immutableEntry(x.getKey(), x.getValue().get(dim)));
             return stream.collect(Collectors.toList());
-        }
-
-        @Override
-        public Collection<EntityPos> values() {
-            return this.waypoints.values().stream().map((pos) -> pos.get(dim)).collect(Collectors.toList());
         }
 
         @Override

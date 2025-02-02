@@ -32,15 +32,6 @@ public class EntityPos {
         this.pitch = pitch;
         this.dim = dim;
     }
-
-    public void relocate(BlockPos pos) {
-        this.x = pos.getX();
-        this.y = pos.getY();
-        this.z = pos.getZ();
-        this.yaw = 0;
-        this.pitch = 90;
-    }
-
     public void relocate(@NotNull Entity entity) {
         relocate(entity.dimension, entity.posX, entity.posY, entity.posZ, entity.rotationYaw, entity.rotationPitch);
     }
@@ -66,7 +57,7 @@ public class EntityPos {
     }
 
     public EntityPos(int dim, @NotNull BlockPos pos) {
-        relocate(pos);
+        relocate(dim, pos.getX(), pos.getY(), pos.getZ(), 0, 0);
     }
 
     public EntityPos(Entity entity) {
@@ -89,7 +80,8 @@ public class EntityPos {
         if (e.dimension == dim) {
             e.connection.setPlayerLocation(x, y, z, yaw, pitch);
         } else {
-            if (!Configure.allowDimensionCross) throw new CommandException(I18n.format("teleport.no_dimension_cross"));
+            if (!Configure.couldTeleportTo(e.dimension, dim))
+                throw new CommandException(I18n.format("teleport.no_dimension_cross", DimensionManager.getProviderType(e.dimension).getName(), DimensionManager.getProviderType(dim).getName()));
             e.server.getPlayerList().transferPlayerToDimension(e, dim, (world, entity, __) -> entity.setLocationAndAngles(x, y, z, yaw, pitch));
         }
     }
@@ -119,7 +111,7 @@ public class EntityPos {
     @Override
     public String toString() {
         String dimName = DimensionManager.getProviderType(dim).getName();
-        return Configure.showCoordinates ?
+        return Configure.showWaypointCoords ?
                 String.format("[%.1f,%.1f,%.1f], %s", x, y, z, dimName) :
                 String.format("in %s", dimName);
     }

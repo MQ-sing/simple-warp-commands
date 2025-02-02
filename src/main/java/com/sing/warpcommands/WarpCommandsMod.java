@@ -46,6 +46,7 @@ public class WarpCommandsMod {
 
             }
         }, () -> null);
+        Configure.update();
     }
 
     public WarpCommandsMod() {
@@ -54,19 +55,18 @@ public class WarpCommandsMod {
         } else {
             matchProvider = (match, str) -> Utils.matchesSubStr(match, str, (a, starts, b) -> a.startsWith(b));
         }
-        Configure.update();
     }
     @Mod.EventHandler
     void serverInit(FMLServerStartingEvent e) {
-        if (Configure.enableWarpCommand) CommandWarp.init(e);
-        if (Configure.enableHomeCommand) CommandHome.init(e);
-        if (Configure.enableBackCommand) CommandBack.init(e);
-        if (Configure.enableSpawnCommand) CommandSpawn.init(e);
-        if (Configure.enablePosCommand) CommandPos.init(e);
-        if (Configure.enableTpPlayerCommand) {
+        if (Configure.commands.enableWarpCommand) CommandWarp.init(e);
+        if (Configure.commands.enableHomeCommand) CommandHome.init(e);
+        if (Configure.commands.enableBackCommand) CommandBack.init(e);
+        if (Configure.commands.enableSpawnCommand) CommandSpawn.init(e);
+        if (Configure.commands.enablePosCommand) CommandPos.init(e);
+        if (Configure.commands.enableTpPlayerCommand) {
             e.registerServerCommand(new CommandTeleportPlayer());
         }
-        if (Configure.enableByeCommand) e.registerServerCommand(new CommandBye());
+        if (Configure.commands.enableByeCommand) e.registerServerCommand(new CommandBye());
     }
 
     @SubscribeEvent
@@ -88,7 +88,7 @@ public class WarpCommandsMod {
 
     @SubscribeEvent
     static void onEntityDeath(LivingDeathEvent e) {
-        if (!Configure.enableBackRecordDeath || !(e.getEntity() instanceof EntityPlayer)) return;
+        if (!Configure.doBackRecordDeath || !(e.getEntity() instanceof EntityPlayer)) return;
         EntityPlayer player = (EntityPlayer) e.getEntity();
         CapabilityPlayer.PlayerLocations l = CapabilityPlayer.get(player);
         if (l != null) l.backPosition.relocate(player);

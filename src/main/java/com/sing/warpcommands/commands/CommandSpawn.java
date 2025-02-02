@@ -3,15 +3,20 @@ package com.sing.warpcommands.commands;
 import com.sing.warpcommands.commands.utils.AbstractCommand;
 import com.sing.warpcommands.commands.utils.Utils;
 import com.sing.warpcommands.utils.EntityPos;
+import mcp.MethodsReturnNonnullByDefault;
 import net.minecraft.command.CommandException;
 import net.minecraft.command.ICommandSender;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.text.TextFormatting;
-import net.minecraftforge.common.DimensionManager;
+import net.minecraft.world.WorldServer;
 import net.minecraftforge.fml.common.event.FMLServerStartingEvent;
 
+import javax.annotation.ParametersAreNonnullByDefault;
+
 public class CommandSpawn {
+    @MethodsReturnNonnullByDefault
+    @ParametersAreNonnullByDefault
     static class CommandSpawnTeleport extends AbstractCommand {
 
         @Override
@@ -23,7 +28,8 @@ public class CommandSpawn {
         public void execute(MinecraftServer server, ICommandSender sender, String[] args) throws CommandException {
             noArguments(args);
             EntityPlayerMP player = asPlayer(sender);
-            EntityPos.teleport(Utils.getPlayerBedLocation(player, server).orElseGet(() -> (DimensionManager.getWorld(0).getSpawnPoint())), player);
+            final WorldServer world = player.getServerWorld();
+            Utils.getPlayerBedLocation(player, server).orElseGet(() -> new EntityPos(world.provider.getDimension(), world.provider.getRandomizedSpawnPoint())).teleport(player);
             sendSuccess(TextFormatting.AQUA, player);
         }
     }

@@ -1,8 +1,8 @@
 package com.sing.warpcommands.commands.utils;
 
+import com.sing.warpcommands.utils.EntityPos;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.text.ITextComponent;
 import net.minecraft.util.text.TextComponentString;
 
@@ -10,10 +10,11 @@ import java.util.Collection;
 import java.util.Optional;
 
 public class Utils {
-    public static Optional<BlockPos> getPlayerBedLocation(EntityPlayer player, MinecraftServer server) {
-        return Optional.ofNullable(player.getBedLocation(0)).map(pos ->
-                EntityPlayer.getBedSpawnLocation(server.getWorld(0), pos, false)
-        ).map(x -> x.add(0.5, 0.1, 0.5));
+    public static Optional<EntityPos> getPlayerBedLocation(EntityPlayer player, MinecraftServer server) {
+        final int dim = player.getSpawnDimension();
+        return Optional.ofNullable(player.getBedLocation(dim)).map(pos ->
+                EntityPlayer.getBedSpawnLocation(server.getWorld(0), pos, player.isSpawnForced(dim))
+        ).map(x -> new EntityPos(dim, x.add(0.5, 0.1, 0.5)));
     }
 
     public static int findFirstSymbol(String str, int startsWith) {
