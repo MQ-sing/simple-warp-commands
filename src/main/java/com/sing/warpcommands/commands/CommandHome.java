@@ -10,6 +10,7 @@ import net.minecraft.command.ICommandSender;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.text.TextFormatting;
 import net.minecraftforge.fml.common.event.FMLServerStartingEvent;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -33,7 +34,7 @@ public class CommandHome {
         public void execute(@NotNull MinecraftServer server, @NotNull ICommandSender sender, String @NotNull [] args) throws CommandException {
             EntityPlayerMP player = playerOperand(sender, args);
             CapabilityPlayer.PlayerLocations loc = getPlayerCapabilities(player);
-            if (loc.homePosition.has()) {
+            if (loc.homePosition.exist()) {
                 loc.homePosition.teleport(player);
             } else {
                 Utils.getPlayerBedLocation(player, server)
@@ -41,7 +42,7 @@ public class CommandHome {
                         .orElseThrow(() -> new CommandException(I18n.format("home.tip")))
                         .teleport(player);
             }
-            sendSuccess(sender);
+            sendSuccess(TextFormatting.LIGHT_PURPLE, sender);
         }
     }
 
@@ -59,12 +60,12 @@ public class CommandHome {
             switch (args.length) {
                 case 0:
                     loc.homePosition.relocate(player);
-                    sendSuccess(sender);
+                    sendSuccess(TextFormatting.DARK_GREEN, sender);
                     break;
                 case 1:
                     if (!args[0].equals("reset")) badUsage();
                     loc.homePosition.clear();
-                    sendSuccess("sethome.reset", sender);
+                    sendSuccess("sethome.reset", TextFormatting.DARK_AQUA, sender);
                     break;
                 default:
                     badUsage();

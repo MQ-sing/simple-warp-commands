@@ -1,20 +1,21 @@
 package com.sing.warpcommands.commands;
 
 import com.sing.warpcommands.commands.utils.AbstractCommand;
+import com.sing.warpcommands.commands.utils.Utils;
 import com.sing.warpcommands.utils.EntityPos;
 import net.minecraft.client.resources.I18n;
 import net.minecraft.command.CommandException;
 import net.minecraft.command.ICommandSender;
-import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.math.BlockPos;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 import static net.minecraft.command.CommandBase.notifyCommandListener;
 
@@ -44,10 +45,13 @@ public class CommandTeleportPlayer extends AbstractCommand {
 
     @Override
     public @NotNull List<String> getTabCompletions(@NotNull MinecraftServer server, @NotNull ICommandSender sender, String @NotNull [] args, @Nullable BlockPos targetPos) {
-        return optionsStartsWith(args[0], server.getPlayerList()
-                .getPlayers().stream()
-                .filter(i -> i != sender)
-                .map(EntityPlayer::getName)
-                .collect(Collectors.toList()));
+        if (args.length > 1) return Collections.emptyList();
+        List<String> completions = new ArrayList<>();
+        for (EntityPlayerMP player : server.getPlayerList().getPlayers()) {
+            if (player == sender) continue;
+            if (Utils.matchesSubStr(player.getName(), args[0], (a, starts, b) -> a.startsWith(b, starts)) != -1)
+                return completions;
+        }
+        return completions;
     }
 }

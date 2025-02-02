@@ -1,5 +1,6 @@
 package com.sing.warpcommands.data;
 
+import com.google.common.collect.Maps;
 import com.sing.warpcommands.Configure;
 import com.sing.warpcommands.utils.EntityPos;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
@@ -20,6 +21,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class WorldDataWaypoints extends WorldSavedData {
@@ -68,14 +70,15 @@ public class WorldDataWaypoints extends WorldSavedData {
 
         boolean has(String name);
 
+        int size();
         @Nullable
         EntityPos remove(String name);
 
         Set<String> keySet();
 
-        Iterable<Map.Entry<String, EntityPos>> entries();
+        Collection<Map.Entry<String, EntityPos>> entries();
 
-        Iterable<EntityPos> values();
+        Collection<EntityPos> values();
     }
 
     public class SharedWaypointList implements IWaypointList {
@@ -116,8 +119,13 @@ public class WorldDataWaypoints extends WorldSavedData {
         }
 
         @Override
-        public Iterable<EntityPos> values() {
+        public Collection<EntityPos> values() {
             return this.waypoints.values();
+        }
+
+        @Override
+        public int size() {
+            return this.waypoints.size();
         }
     }
 
@@ -187,7 +195,9 @@ public class WorldDataWaypoints extends WorldSavedData {
         @Nullable
         @Override
         public EntityPos get(String name) {
-            return waypoints.get(name).get(dim);
+            final IndependentEntityPos pos = waypoints.get(name);
+            if (pos == null) return null;
+            return pos.get(dim);
         }
 
         @Override
@@ -218,34 +228,19 @@ public class WorldDataWaypoints extends WorldSavedData {
         }
 
         @Override
-        public Iterable<Map.Entry<String, EntityPos>> entries() {
-            Stream<Map.Entry<String, EntityPos>> stream = waypoints.entrySet().stream().map((x) -> new Map.Entry<String, EntityPos>() {
-                        final String key = x.getKey();
-                        EntityPos pos = x.getValue().get(dim);
-
-                        @Override
-                        public String getKey() {
-                            return key;
-                        }
-
-                        @Override
-                        public EntityPos getValue() {
-                            return pos;
-                        }
-
-                        @Override
-                        public EntityPos setValue(EntityPos value) {
-                            pos = value;
-                            return value;
-                        }
-                    }
-            );
-            return stream::iterator;
+        public Collection<Map.Entry<String, EntityPos>> entries() {
+            Stream<Map.Entry<String, EntityPos>> stream = waypoints.entrySet().stream().map(x -> Maps.immutableEntry(x.getKey(), x.getValue().get(dim)));
+            return stream.collect(Collectors.toList());
         }
 
         @Override
-        public Iterable<EntityPos> values() {
-            return this.waypoints.values().stream().map((pos) -> pos.get(dim))::iterator;
+        public Collection<EntityPos> values() {
+            return this.waypoints.values().stream().map((pos) -> pos.get(dim)).collect(Collectors.toList());
+        }
+
+        @Override
+        public int size() {
+            return this.waypoints.size();
         }
     }
 

@@ -7,6 +7,7 @@ import net.minecraft.command.CommandException;
 import net.minecraft.command.ICommandSender;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.util.text.TextFormatting;
 import net.minecraftforge.common.DimensionManager;
 import net.minecraftforge.fml.common.event.FMLServerStartingEvent;
 
@@ -23,7 +24,7 @@ public class CommandSpawn {
             noArguments(args);
             EntityPlayerMP player = asPlayer(sender);
             EntityPos.teleport(Utils.getPlayerBedLocation(player, server).orElseGet(() -> (DimensionManager.getWorld(0).getSpawnPoint())), player);
-            sendSuccess(player);
+            sendSuccess(TextFormatting.AQUA, player);
         }
     }
 

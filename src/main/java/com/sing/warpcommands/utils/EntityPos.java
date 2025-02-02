@@ -112,6 +112,10 @@ public class EntityPos {
         return new EntityPos(nbt);
     }
 
+    public double distanceSquared(double x, double y, double z) {
+        return (x - this.x) * (x - this.x) + (y - this.y) * (y - this.y) + (z - this.z) * (z - this.z);
+    }
+
     @Override
     public String toString() {
         String dimName = DimensionManager.getProviderType(dim).getName();

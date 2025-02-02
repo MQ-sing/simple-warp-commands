@@ -59,4 +59,7 @@ dependencies {
     // implementation ('com.google.code.gson:gson:2.8.6') {
     //     transitive = false
     // }
+    compileOnly 'org.jetbrains:annotations:24.0.0'
+    compileOnly rfg.deobf('curse.maven:jecharacters-250702:3924701')
+    runtimeOnly rfg.deobf('curse.maven:jecharacters-250702:3924701')
 }

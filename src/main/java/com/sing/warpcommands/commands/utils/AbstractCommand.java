@@ -7,7 +7,9 @@ import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.text.Style;
 import net.minecraft.util.text.TextComponentTranslation;
+import net.minecraft.util.text.TextFormatting;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -89,12 +91,20 @@ public abstract class AbstractCommand implements ICommand {
         return asPlayer(sender);
     }
 
-    public final void sendSuccess(ICommandSender sender, Object... args) {
-        sender.sendMessage(new TextComponentTranslation(this.getName() + ".success", args));
+    public void sendSuccess(TextFormatting style, ICommandSender sender, Object... args) {
+        sendSuccess(getName(), style, sender, args);
     }
 
-    public final void sendSuccess(String key, ICommandSender sender, Object... args) {
-        sender.sendMessage(new TextComponentTranslation(key + ".success", args));
+    public void sendSuccess(Style style, ICommandSender sender, Object... args) {
+        sendSuccess(getName(), style, sender, args);
+    }
+
+    public static void sendSuccess(String key, TextFormatting style, ICommandSender sender, Object... args) {
+        sender.sendMessage(new TextComponentTranslation(key + ".success", args).setStyle(new Style().setColor(style)));
+    }
+
+    public static void sendSuccess(String key, Style style, ICommandSender sender, Object... args) {
+        sender.sendMessage(new TextComponentTranslation(key + ".success", args).setStyle(style));
     }
 
     public final CapabilityPlayer.PlayerLocations getPlayerCapabilities(EntityPlayerMP player) throws CommandException {
