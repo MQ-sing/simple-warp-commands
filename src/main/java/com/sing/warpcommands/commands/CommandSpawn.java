@@ -28,7 +28,7 @@ public class CommandSpawn {
         public void execute(MinecraftServer server, ICommandSender sender, String[] args) throws CommandException {
             noArguments(args);
             EntityPlayerMP player = asPlayer(sender);
-            final WorldServer world = player.getServerWorld();
+            final WorldServer world = server.getWorld(player.getSpawnDimension());
             Utils.getPlayerBedLocation(player, server).orElseGet(() -> new EntityPos(world.provider.getDimension(), world.provider.getRandomizedSpawnPoint())).teleport(player);
             sendSuccess(TextFormatting.AQUA, player);
         }

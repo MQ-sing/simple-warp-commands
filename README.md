@@ -1,6 +1,6 @@
 ## Simple Warp Commands
 
-A Minecraft mod that adds the following commands...
+A lightweight and configurable Minecraft mod adding intuitive teleportation commands.
 
 ### Waypoints
 
@@ -41,14 +41,14 @@ A Minecraft mod that adds the following commands...
 - /back  
   Return to your last death location or
   previous position before teleportation (e.g., after using /warp).
-- /back!  
+- /setback(back!)  
   Manually set a backtrack location.
 
 ### pos
 
 - /pos  
   Teleport to the location saved via /pos!
-- /pos!  
+- /setpos(pos!)  
   Save a location for /pos teleportation
 
 ### Misc
