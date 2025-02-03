@@ -19,7 +19,7 @@ public class Utils {
         BlockPos respawnPosition = player.getRespawnPosition();
         final ServerWorld world = player.server.getLevel(player.getRespawnDimension());
         if (respawnPosition == null || world == null) return Optional.empty();
-        return PlayerEntity.findRespawnPositionAndUseSpawnBlock(world, respawnPosition, 0, false, false).map(pos -> new EntityPos(pos.x, pos.y, pos.z, 90, 0, player.getRespawnDimension()));
+        return PlayerEntity.findRespawnPositionAndUseSpawnBlock(world, respawnPosition, 0, player.isRespawnForced(), false).map(pos -> new EntityPos(pos.x, pos.y, pos.z, 90, 0, player.getRespawnDimension()));
     }
 
     public static LiteralArgumentBuilder<CommandSource> command(String name) {

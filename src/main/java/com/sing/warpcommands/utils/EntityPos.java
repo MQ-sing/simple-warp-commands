@@ -1,8 +1,8 @@
 package com.sing.warpcommands.utils;
 
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
+import com.mojang.brigadier.exceptions.Dynamic2CommandExceptionType;
 import com.mojang.brigadier.exceptions.DynamicCommandExceptionType;
-import com.mojang.brigadier.exceptions.SimpleCommandExceptionType;
 import com.sing.warpcommands.Configure;
 import com.sing.warpcommands.data.CapabilityPlayer;
 import net.minecraft.entity.Entity;
@@ -85,19 +85,20 @@ public class EntityPos {
         new EntityPos(teleported).teleport(target);
     }
 
-    public static final SimpleCommandExceptionType NO_DIM_CROSS = new SimpleCommandExceptionType(new TranslationTextComponent("teleport.no_dimension_cross"));
+    public static final Dynamic2CommandExceptionType NO_DIM_CROSS = new Dynamic2CommandExceptionType((from, to) -> new TranslationTextComponent("teleport.no_dimension_cross", from, to));
     public static final DynamicCommandExceptionType DIM_NOT_EXIST = new DynamicCommandExceptionType(name -> new TranslationTextComponent("teleport.no_dim", name));
 
     public void teleport(ServerPlayerEntity e) throws CommandSyntaxException {
         if (!e.server.getWorldData().worldGenSettings().dimensions().containsKey(dim.location()))
-            throw DIM_NOT_EXIST.create(dim);
+            throw DIM_NOT_EXIST.create(dim.location());
         LazyOptional<CapabilityPlayer.PlayerLocations> cap = CapabilityPlayer.get(e);
         cap.ifPresent(c -> c.backPosition.position = new EntityPos(e));
         if (!Configure.enableRiding.get()) e.stopRiding();
         if (e.level.dimension().equals(dim)) {
             e.connection.teleport(x, y, z, yRot, xRot);
         } else {
-            if (!Configure.couldTeleportTo(e.level.dimension(), dim)) throw NO_DIM_CROSS.create();
+            if (!Configure.couldTeleportTo(e.level.dimension(), dim))
+                throw NO_DIM_CROSS.create(e.level.dimension().location(), dim.location());
             ServerWorld world = e.server.getLevel(dim);
             if (world == null) throw DIM_NOT_EXIST.create(dim.toString());
             e.teleportTo(world, x, y, z, yRot, xRot);
@@ -129,7 +130,7 @@ public class EntityPos {
     @Override
     public String toString() {
         String dimName = dim.location().toString();
-        return Configure.showCoordinates.get() ?
+        return Configure.showWaypointCoords.get() ?
                 String.format("[%.1f,%.1f,%.1f], %s", x, y, z, dimName) :
                 String.format("in %s", dimName);
     }

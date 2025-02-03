@@ -4,8 +4,8 @@
   "home.tip": "你现在还没有设置你的家。试试睡一觉，或者执行\"sethome\"指令设置。",
   "warps.no_warp": "现在还没有传送点！使用\"setwarp\"指令以设置。",
   "setwarp.success": "传送点%s已设置！",
-  "warp.not_found": "未找到传送点%s！",
-  "setwarp.replace": "传送点%s已经存在。如果你确实想替换它，请使用'/warps move'指令。",
+  "warp.not_found": "未找到传送点'%s'！",
+  "setwarp.replace": "传送点'%s'已经存在。使用'/warps move'指令移动其位置。",
   "delwarp.success": "传送点%s已删除！",
   "sethome.success": "家已设置！",
   "sethome.reset.success": "已取消设置家！",
@@ -13,12 +13,12 @@
   "locations.notfound": "你还没有可传送的位置。",
   "locations.beset": "坐标已记录！",
   "teleport.no_dim": "维度%s不存在！",
-  "teleport.no_dimension_cross": "跨维度传送已被禁用。",
+  "teleport.no_dimension_cross": "从%s到%s的跨维度传送已被禁用。",
   "tpplus.success": "已传送至%s",
   "tpplus.no_target": "游戏中没有其他玩家。",
   "setback.success": "Back坐标已设置！",
   "warps.rename.success": "已将传送点%s更名为%s",
   "warps.move.success": "已将传送点%s移动至此",
   "spawn.success": "已到达重生点！",
-  "warps.invalid_move": "禁止跨维度移动传送点。"
+  "warps.invalid_move": "无法跨维度移动传送点。"
 }

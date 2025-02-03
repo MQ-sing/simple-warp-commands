@@ -31,9 +31,22 @@ displayName = "${mod_name}" #mandatory
 # A text field displayed in the mod UI
 authors = "${mod_authors}" #optional
 side = "BOTH"
+logoFile = "logo.png"
 
 # The description text for the mod (multi line!) (#mandatory)
 description = '''${mod_description}'''
+[[dependencies.simple_warp_commands]]
+modId = "forge"
+mandatory = true
+versionRange = "[36,)"
+ordering = "NONE"
+side = "BOTH"
+[[dependencies.simple_warp_commands]]
+modId = "minecraft"
+mandatory = true
+versionRange = "[1.16.5,1.17)"
+ordering = "NONE"
+side = "BOTH"
 [[dependencies.simple_warp_commands]]
 modId = "jecharacters"
 versionRange = "[1.16.4-4.3.9,)"

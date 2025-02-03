@@ -33,7 +33,6 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public class CommandWarp {
@@ -63,7 +62,7 @@ public class CommandWarp {
 
         @Override
         public <S> CompletableFuture<Suggestions> listSuggestions(CommandContext<S> context, SuggestionsBuilder builder) {
-            class StoreStruct {
+            class StoreStruct implements Comparable<StoreStruct> {
                 public final int startIndex;
                 public final String name;
 
@@ -71,8 +70,14 @@ public class CommandWarp {
                     this.startIndex = startIndex;
                     this.name = name;
                 }
+
+                @Override
+                public int compareTo(@NotNull StoreStruct o) {
+                    return Comparator.<StoreStruct>comparingInt(i -> i.startIndex)
+                            .thenComparing(i -> i.name).compare(this, o);
+                }
             }
-            List<StoreStruct> suggestions = new ArrayList<>();
+            Set<StoreStruct> suggestions = new TreeSet<>();
             if (context.getSource() instanceof CommandSource) {
                 CommandSource source = (CommandSource) context.getSource();
                 ServerWorld world = source.getLevel();
@@ -94,9 +99,8 @@ public class CommandWarp {
                         suggestions.add(new StoreStruct(matchIndex, waypoint.getKey()));
                     }
                 }
-
             } else return Suggestions.empty();
-            suggestions.stream().sorted(Comparator.comparingInt(i -> i.startIndex)).forEach(i -> builder.suggest(i.name));
+            suggestions.forEach(i -> builder.suggest(i.name));
             return builder.buildFuture();
         }
 
@@ -202,24 +206,37 @@ public class CommandWarp {
         if (data.size() == 0) throw NO_EXIST_WAYPOINT.create();
         final Entity entity = ctx.getSource().getEntityOrException();
         final RegistryKey<World> dim = entity.level.dimension();
-        Map<EntityPos, Double> distances = data.values().stream()
-                .collect(Collectors.toMap(
-                        Function.identity(),
-                        pos -> pos.dim.equals(dim) ?
-                                pos.distanceSquared(entity.getX(), entity.getY(), entity.getZ()) :
-                                Double.POSITIVE_INFINITY
-                ));
+        class ListElem implements Comparable<ListElem> {
+            public final EntityPos pos;
+            public final String name;
+            public final double distance;
+
+            public ListElem(EntityPos pos, String name, Entity entity) {
+                this.pos = pos;
+                this.name = name;
+                this.distance = pos.distanceSquared(entity.getX(), entity.getY(), entity.getZ());
+            }
+
+            @Override
+            public int compareTo(@NotNull ListElem target) {
+                return Comparator.<ListElem>comparingDouble(elem -> elem.distance)
+                        .thenComparing(elem -> elem.pos.dim != dim)
+                        .thenComparing(elem -> !Configure.couldTeleportTo(dim, elem.pos.dim))
+                        .thenComparing(elem -> elem.pos.dim)
+                        .thenComparing(elem -> elem.name)
+                        .compare(this, target);
+            }
+        }
+        final Collection<Map.Entry<String, EntityPos>> entries = data.entries();
+        Set<ListElem> elems = new TreeSet<>();
+        for (Map.Entry<String, EntityPos> entry : entries) {
+            final EntityPos pos = entry.getValue();
+            elems.add(new ListElem(pos, entry.getKey(), entity));
+        }
         ctx.getSource().sendSuccess(
                 Utils.joinTextComponent(
-                        data.entries().stream()
-                                .sorted(
-                                        Comparator.<Map.Entry<String, EntityPos>>comparingDouble(pos -> distances.get(pos.getValue()))
-                                                .thenComparing(pos -> pos.getValue().dim != dim)
-                                                .thenComparing(pos -> !Configure.couldTeleportTo(dim, pos.getValue().dim))
-                                                .thenComparing(pos -> pos.getValue().dim)
-                                                .thenComparing(Map.Entry::getKey)
-                                )
-                                .map(i -> getWarpInfoMessage(i.getKey(), i.getValue(), Configure.couldTeleportTo(dim, i.getValue().dim)))
+                        elems.stream()
+                                .map(i -> getWarpInfoMessage(i.name, i.pos, Configure.couldTeleportTo(dim, i.pos.dim)))
                                 .collect(Collectors.toList()),
                         new StringTextComponent("\n"))
                 , false);
