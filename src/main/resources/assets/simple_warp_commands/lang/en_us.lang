@@ -28,5 +28,5 @@ setback.success=Back position set!
 warps.usage=/warps [get|move|remove] [waypoint] or /warps rename [waypoint] [new-waypoint-name] or /warps list(or with no arguments)
 warps.rename.success=Renamed waypoint %s to %s
 warps.move.success=Moved waypoint %s here
-spawn.usage=/spawn
+spawn.usage=/spawn or /spawn world
 spawn.success=Teleported to the spawn location!

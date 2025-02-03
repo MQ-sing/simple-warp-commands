@@ -14,9 +14,11 @@ import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import javax.annotation.ParametersAreNonnullByDefault;
 import java.util.*;
 import java.util.stream.Collectors;
 
+@ParametersAreNonnullByDefault
 public abstract class AbstractCommand implements ICommand {
     @Contract("->fail")
     public final void badUsage() throws WrongUsageException {
@@ -24,27 +26,27 @@ public abstract class AbstractCommand implements ICommand {
     }
 
     @Override
-    public @NotNull String getUsage(@NotNull ICommandSender sender) {
+    public @NotNull String getUsage(ICommandSender sender) {
         return this.getName() + ".usage";
     }
 
     @Override
-    public final boolean checkPermission(@NotNull MinecraftServer server, ICommandSender sender) {
+    public final boolean checkPermission(MinecraftServer server, ICommandSender sender) {
         return !Configure.requireOp || (sender instanceof EntityPlayerMP && server.getPlayerList().canSendCommands(((EntityPlayerMP) sender).getGameProfile()));
     }
 
     @Override
-    public @NotNull List<String> getTabCompletions(@NotNull MinecraftServer server, @NotNull ICommandSender sender, String @NotNull [] args, @Nullable BlockPos targetPos) {
+    public @NotNull List<String> getTabCompletions(MinecraftServer server, ICommandSender sender, String[] args, @Nullable BlockPos targetPos) {
         return Collections.emptyList();
     }
 
     @Override
-    public final int compareTo(@NotNull ICommand o) {
+    public final int compareTo(ICommand o) {
         return this.getName().compareTo(o.getName());
     }
 
     @Override
-    public boolean isUsernameIndex(String @NotNull [] args, int index) {
+    public boolean isUsernameIndex(String[] args, int index) {
         return false;
     }
 
@@ -113,10 +115,10 @@ public abstract class AbstractCommand implements ICommand {
     }
 
     public final void sendSuccessSet(ICommandSender sender) {
-        sender.sendMessage(new TextComponentTranslation("locations.beset"));
+        sender.sendMessage(new TextComponentTranslation("locations.beset").setStyle(new Style().setColor(TextFormatting.BLUE)));
     }
     @Contract("null->fail")
-    public static <T> T nonNull(T obj) throws CommandException {
+    public static <T> T nonNull(@Nullable T obj) throws CommandException {
         if (obj == null) throw new CommandException("Null");
         return obj;
     }
