@@ -188,6 +188,7 @@ public class CommandWarp {
                     argumentsInLength(args, 3);
                     final EntityPos removed = data.remove(name);
                     if (removed == null) throw new CommandException("warp.not_found", name);
+                    if (data.has(args[2])) throw new CommandException("setwarp.replace", name);
                     data.set(args[2], removed);
                     sendSuccess("warps.rename", TextFormatting.AQUA, sender, waypointName(name), waypointName(args[2]));
                     break;
@@ -218,7 +219,7 @@ public class CommandWarp {
                     return optionsStartsWith(args[0], "rename", "get", "move", "list");
                 case 2:
                     if (!args[0].equals("list"))
-                        return completeWaypoint(sender.getEntityWorld(), args[0]);
+                        return completeWaypoint(sender.getEntityWorld(), args[1]);
             }
             return Collections.emptyList();
         }

@@ -55,7 +55,10 @@ A lightweight and configurable Minecraft mod adding intuitive teleportation comm
 
 - /bye(/kil)  
   Just kill yourself
-
+- /spawn  
+  Teleport to your spawn location
+  - world  
+    Force teleport to the world spawn location
 ### Tips
 
 With [JustEnoughCharacters](https://www.curseforge.com/minecraft/mc-mods/just-enough-characters) installed,
