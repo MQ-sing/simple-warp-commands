@@ -201,9 +201,8 @@ public class CommandWarp {
                 }
                 case "move": {
                     argumentsInLength(args, 2);
-                    final EntityPos pos = data.get(name);
-                    if (pos == null) throw new CommandException("warp.not_found", name);
-                    pos.relocate(player);
+                    if (!data.has(name)) throw new CommandException("warp.not_found", name);
+                    data.relocate(name, new EntityPos(player));
                     sendSuccess("warps.move", TextFormatting.AQUA, sender, waypointName(name));
                     break;
                 }

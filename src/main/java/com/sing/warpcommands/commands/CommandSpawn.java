@@ -36,7 +36,7 @@ public class CommandSpawn {
             final WorldServer world = server.getWorld(player.getSpawnDimension());
             if (args.length == 1 && !args[0].equals("world") || args.length > 1) badUsage();
             final Optional<EntityPos> targetPos = args.length == 0 ? Utils.getPlayerBedLocation(player, server) : Optional.empty();
-            targetPos.orElseGet(() -> new EntityPos(world.provider.getDimension(), world.provider.getRandomizedSpawnPoint())).teleport(player);
+            targetPos.orElseGet(() -> new EntityPos(world.provider.getRandomizedSpawnPoint(), world.provider.getDimension())).teleport(player);
             sendSuccess(TextFormatting.AQUA, player);
         }
 

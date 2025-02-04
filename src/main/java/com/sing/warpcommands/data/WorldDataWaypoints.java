@@ -19,6 +19,7 @@ import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -66,6 +67,8 @@ public class WorldDataWaypoints extends WorldSavedData {
 
         void set(String name, EntityPos pos);
 
+        void relocate(String name, EntityPos pos);
+
         boolean has(String name);
 
         int size();
@@ -88,6 +91,14 @@ public class WorldDataWaypoints extends WorldSavedData {
         public void set(String name, EntityPos pos) {
             waypoints.put(name, pos);
             markDirty();
+        }
+
+        @Override
+        public void relocate(String name, EntityPos target) {
+            final EntityPos pos = waypoints.get(name);
+            if (pos == null) throw new NoSuchElementException();
+            markDirty();
+            pos.relocate(target);
         }
 
         @Override
@@ -188,6 +199,18 @@ public class WorldDataWaypoints extends WorldSavedData {
         public void set(String name, EntityPos pos) {
             waypoints.put(name, new IndependentEntityPos(pos));
             markDirty();
+        }
+
+        @Override
+        public void relocate(String name, EntityPos target) {
+            final IndependentEntityPos pos = waypoints.get(name);
+            if (pos == null) throw new NoSuchElementException();
+            markDirty();
+            pos.x = target.x;
+            pos.y = target.y;
+            pos.z = target.z;
+            pos.yaw = target.yaw;
+            pos.pitch = target.pitch;
         }
 
         @Override

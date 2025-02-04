@@ -14,7 +14,7 @@ public class Utils {
         final int dim = player.getSpawnDimension();
         return Optional.ofNullable(player.getBedLocation(dim)).map(pos ->
                 EntityPlayer.getBedSpawnLocation(server.getWorld(0), pos, player.isSpawnForced(dim))
-        ).map(x -> new EntityPos(dim, x.add(0.5, 0.1, 0.5)));
+        ).map(x -> new EntityPos(x.add(0.5, 0.1, 0.5), dim));
     }
 
     public static int findFirstSymbol(String str, int startsWith) {

@@ -24,16 +24,13 @@ public class EntityPos {
     public float pitch;
     public int dim;
 
-    public void relocate(int dim, double x, double y, double z, float yaw, float pitch) {
-        this.x = x;
-        this.y = y;
-        this.z = z;
-        this.yaw = yaw;
-        this.pitch = pitch;
-        this.dim = dim;
-    }
-    public void relocate(@NotNull Entity entity) {
-        relocate(entity.dimension, entity.posX, entity.posY, entity.posZ, entity.rotationYaw, entity.rotationPitch);
+    public void relocate(EntityPos pos) {
+        x = pos.x;
+        y = pos.y;
+        z = pos.z;
+        yaw = pos.yaw;
+        pitch = pos.pitch;
+        dim = pos.dim;
     }
 
     public EntityPos(double x, double y, double z, float yaw, float pitch, int dim) {
@@ -56,22 +53,17 @@ public class EntityPos {
         );
     }
 
-    public EntityPos(int dim, @NotNull BlockPos pos) {
-        relocate(dim, pos.getX(), pos.getY(), pos.getZ(), 0, 0);
+    public EntityPos(@NotNull BlockPos pos, int dim) {
+        this(pos.getX(), pos.getY(), pos.getZ(), 0, 0, dim);
     }
 
     public EntityPos(Entity entity) {
-        relocate(entity);
+        this(entity.posX, entity.posY, entity.posZ, entity.rotationYaw, entity.rotationPitch, entity.dimension);
     }
 
     public static void teleport(@NotNull EntityPlayerMP target, EntityPlayerMP e) throws CommandException {
         new EntityPos(target).teleport(e);
     }
-
-    public static void teleport(@NotNull BlockPos pos, EntityPlayerMP e) throws CommandException {
-        new EntityPos(e.dimension, pos).teleport(e);
-    }
-
     public void teleport(EntityPlayerMP e) throws CommandException {
         if (!DimensionManager.isDimensionRegistered(dim)) throw new CommandException("teleport.no_dim");
         CapabilityPlayer.PlayerLocations cap = CapabilityPlayer.get(e);
