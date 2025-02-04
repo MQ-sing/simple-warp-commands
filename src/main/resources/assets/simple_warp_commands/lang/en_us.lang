@@ -30,3 +30,4 @@ warps.rename.success=Renamed waypoint %s to %s
 warps.move.success=Moved waypoint %s here
 spawn.usage=/spawn or /spawn world
 spawn.success=Teleported to the spawn location!
+warps.invalid_move=Cannot move waypoints across dimensions.

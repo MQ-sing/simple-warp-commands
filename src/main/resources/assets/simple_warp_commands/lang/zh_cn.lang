@@ -30,3 +30,4 @@ warps.rename.success=已将传送点%s更名为%s
 warps.move.success=已将传送点%s移动至此
 spawn.usage=/spawn或/spawn world
 spawn.success=已到达重生点！
+warps.invalid_move=禁止跨维度移动传送点。
