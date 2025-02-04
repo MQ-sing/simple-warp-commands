@@ -5,7 +5,6 @@ import com.sing.warpcommands.Configure;
 import com.sing.warpcommands.utils.EntityPos;
 import it.unimi.dsi.fastutil.objects.Object2ObjectMap;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
-import it.unimi.dsi.fastutil.objects.ObjectSet;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.util.RegistryKey;
 import net.minecraft.util.ResourceLocation;
@@ -22,7 +21,7 @@ import java.security.InvalidParameterException;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
+import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -76,17 +75,15 @@ public class WorldDataWaypoints extends WorldSavedData {
 
         void set(String name, EntityPos pos);
 
+        void relocate(String name, EntityPos pos);
+
         boolean has(String name);
 
         int size();
         @Nullable
         EntityPos remove(String name);
 
-        Set<String> keySet();
-
         Collection<Map.Entry<String, EntityPos>> entries();
-
-        Collection<EntityPos> values();
     }
 
     public class SharedWaypointList implements IWaypointList {
@@ -105,6 +102,14 @@ public class WorldDataWaypoints extends WorldSavedData {
         }
 
         @Override
+        public void relocate(String name, EntityPos target) {
+            final EntityPos pos = waypoints.get(name);
+            if (pos == null) throw new NoSuchElementException();
+            setDirty();
+            pos.relocate(target);
+        }
+
+        @Override
         public boolean has(String name) {
             return waypoints.containsKey(name);
         }
@@ -117,18 +122,8 @@ public class WorldDataWaypoints extends WorldSavedData {
         }
 
         @Override
-        public Set<String> keySet() {
-            return this.waypoints.keySet();
-        }
-
-        @Override
         public Collection<Map.Entry<String, EntityPos>> entries() {
             return this.waypoints.entrySet();
-        }
-
-        @Override
-        public Collection<EntityPos> values() {
-            return this.waypoints.values();
         }
 
         @Override
@@ -172,19 +167,19 @@ public class WorldDataWaypoints extends WorldSavedData {
         public double x;
         public double y;
         public double z;
-        public float yaw;
-        public float pitch;
+        public float yRot;
+        public float xRot;
 
         public EntityPos get(RegistryKey<World> dim) {
-            return new EntityPos(x, y, z, yaw, pitch, dim);
+            return new EntityPos(x, y, z, yRot, xRot, dim);
         }
 
         public IndependentEntityPos(EntityPos pos) {
             this.x = pos.x;
             this.y = pos.y;
             this.z = pos.z;
-            this.yaw = pos.yRot;
-            this.pitch = pos.xRot;
+            this.yRot = pos.yRot;
+            this.xRot = pos.xRot;
         }
     }
 
@@ -212,6 +207,18 @@ public class WorldDataWaypoints extends WorldSavedData {
         }
 
         @Override
+        public void relocate(String name, EntityPos target) {
+            final IndependentEntityPos pos = waypoints.get(name);
+            if (pos == null) throw new NoSuchElementException();
+            setDirty();
+            pos.x = target.x;
+            pos.y = target.y;
+            pos.z = target.z;
+            pos.yRot = target.yRot;
+            pos.xRot = target.xRot;
+        }
+
+        @Override
         public boolean has(String name) {
             return waypoints.containsKey(name);
         }
@@ -228,19 +235,9 @@ public class WorldDataWaypoints extends WorldSavedData {
         }
 
         @Override
-        public ObjectSet<String> keySet() {
-            return waypoints.keySet();
-        }
-
-        @Override
         public Collection<Map.Entry<String, EntityPos>> entries() {
             Stream<Map.Entry<String, EntityPos>> stream = waypoints.entrySet().stream().map(x -> Maps.immutableEntry(x.getKey(), x.getValue().get(dim)));
             return stream.collect(Collectors.toList());
-        }
-
-        @Override
-        public Collection<EntityPos> values() {
-            return this.waypoints.values().stream().map((pos) -> pos.get(dim)).collect(Collectors.toList());
         }
         @Override
         public int size() {

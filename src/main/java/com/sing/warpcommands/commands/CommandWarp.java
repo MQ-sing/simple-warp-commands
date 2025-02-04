@@ -178,7 +178,7 @@ public class CommandWarp {
                     final EntityPos pos = waypoints.get(name);
                     if (pos == null) throw WAYPOINT_NOT_FOUND.create(name);
                     if (ctx.getSource().getLevel().dimension() != pos.dim) throw BAD_WAYPOINT_MOVE.create();
-                    pos.relocate(ctx.getSource().getEntityOrException());
+                    waypoints.relocate(name, new EntityPos(ctx.getSource().getEntityOrException()));
                     Utils.sendSuccess("warps.move", TextFormatting.AQUA, ctx.getSource(), waypointName(name));
                     return 1;
                 }))).then(Commands.literal("get").then(Commands.argument("waypoint", new WayPointArgument()).executes(ctx -> {

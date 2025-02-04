@@ -28,18 +28,13 @@ public class EntityPos {
     public float xRot;
     public RegistryKey<World> dim;
 
-
-    public void relocate(@NotNull RegistryKey<World> dim, double x, double y, double z, float yRot, float xRot) {
-        this.x = x;
-        this.y = y;
-        this.z = z;
-        this.yRot = yRot;
-        this.xRot = xRot;
-        this.dim = dim;
-    }
-
-    public void relocate(@NotNull Entity entity) {
-        relocate(entity.level.dimension(), entity.getX(), entity.getY(), entity.getZ(), entity.yRot, entity.xRot);
+    public void relocate(EntityPos pos) {
+        x = pos.x;
+        y = pos.y;
+        z = pos.z;
+        yRot = pos.yRot;
+        xRot = pos.xRot;
+        dim = pos.dim;
     }
 
     public EntityPos(double x, double y, double z, float yRot, float xRot, @NotNull RegistryKey<World> dim) {
@@ -51,22 +46,6 @@ public class EntityPos {
         this.dim = dim;
     }
 
-    public EntityPos(double x, double y, double z, float yRot, float xRot, ResourceLocation dim) {
-        this.x = x;
-        this.y = y;
-        this.z = z;
-        this.yRot = yRot;
-        this.xRot = xRot;
-        if (dim == null) {
-            throw new IllegalStateException("Data corrupted!Unable to read the dimension info");
-        }
-        this.dim = RegistryKey.create(Registry.DIMENSION_REGISTRY, dim);
-    }
-
-    public EntityPos(BlockPos pos, RegistryKey<World> dim) {
-        this(pos.getX(), pos.getY(), pos.getZ(), 90, 0, dim);
-    }
-
     private EntityPos(CompoundNBT tag) {
         this(
                 tag.getDouble("x"),
@@ -74,11 +53,16 @@ public class EntityPos {
                 tag.getDouble("z"),
                 tag.getFloat("yaw"),
                 tag.getFloat("pitch"),
-                ResourceLocation.tryParse(tag.getString("dim"))
+                RegistryKey.create(Registry.DIMENSION_REGISTRY, new ResourceLocation(tag.getString("dim")))
         );
     }
+
+    public EntityPos(@NotNull BlockPos pos, RegistryKey<World> dim) {
+        this(pos.getX(), pos.getY(), pos.getZ(), 0, 0, dim);
+    }
+
     public EntityPos(Entity entity) {
-        relocate(entity);
+        this(entity.getX(), entity.getY(), entity.getZ(), entity.yRot, entity.xRot, entity.level.dimension());
     }
 
     public static void teleport(@NotNull ServerPlayerEntity teleported, ServerPlayerEntity target) throws CommandSyntaxException {

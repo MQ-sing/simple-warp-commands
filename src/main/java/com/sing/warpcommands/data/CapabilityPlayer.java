@@ -45,7 +45,7 @@ public class CapabilityPlayer {
 
             public void relocate(@NotNull PlayerEntity e) {
                 if (position == null) position = new EntityPos(e);
-                else position.relocate(e);
+                else position.relocate(new EntityPos(e));
             }
 
             public void clear() {
